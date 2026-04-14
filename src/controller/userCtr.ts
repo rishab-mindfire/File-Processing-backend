@@ -50,10 +50,10 @@ class userClass {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
 
-      const token = generateToken({ userEmail });
+      const JWTtoken = generateToken({ userEmail });
       const userRole = await verifyEmplyeeRole(userEmail);
 
-      res.setHeader('Authorization', 'Bearer ' + token);
+      res.setHeader('Authorization', 'Bearer ' + JWTtoken);
       return res.status(200).json({
         message: 'Login successful',
         role: userRole,

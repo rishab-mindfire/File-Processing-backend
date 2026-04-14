@@ -4,32 +4,32 @@ A Node.js backend system where Projects are the primary domain entity, owning fi
 
 MONGODB will be used for storage 
 
-### 1. users Table
+### 1. users Table (Authentication)
 - userID, userName, userEmail, password, role
 ### 2. projects 
-- `id`: Primary Key (UUID/Serial)
-- `name`: String
-- `description`: Text
-- `created_at`: Timestamp
+- id: Primary Key (UUID/Serial)
+- name: String
+- description: Text
+- created_at: Timestamp
 
 ### 3. files 
-- `id`: Primary Key
-- `project_id`: Foreign Key (References Projects)
-- `name`: Original filename
-- `path`: Storage location path (Disk/Object Storage)
-- `size`: Bytes
-- `mime_type`: File type
-- `uploaded_at`: Timestamp
+- id: Primary Key
+- project_id: Foreign Key (References Projects)
+- name: Original filename
+- path: Storage location path (Disk/Object Storage)
+- size: Bytes
+- mime_type: File type
+- uploaded_at: Timestamp
 
 ### 4. Jobs 
-- `id`: Primary Key
-- `project_id`: Foreign Key (References Projects)
-- `type`: Job type (e.g., 'ZIP_COMPRESSION')
-- `status`: Enum (PENDING, PROCESSING, COMPLETED, FAILED)
-- `progress`: Integer (0-100)
-- `output_file_id`: Foreign Key (References Files, nullable)
-- `error`: Text (nullable)
-- `created_at` / `started_at` / `completed_at`: Timestamps
+- id: Primary Key
+- project_id: Foreign Key (References Projects)
+- type: Job type (e.g., 'ZIP_COMPRESSION')
+- status: Enum (PENDING, PROCESSING, COMPLETED, FAILED)
+- progress: Integer (0-100)
+- output_file_id: Foreign Key (References Files, nullable)
+- error: Text (nullable)
+- created_at / started_at / completed_at: Timestamps
 
 ---
 
@@ -50,25 +50,25 @@ MONGODB will be used for storage
 ## API Endpoints
 
 ### Project Management
-- `POST /api/projects` - Create project
-- `GET /api/projects/:id` - Get details + file/job counts
-- `PUT /api/projects/:id` - Update details
-- `DELETE /api/projects/:id` - Delete project and all assets
+- POST /api/projects - Create project
+- GET /api/projects/:id - Get details + file/job counts
+- PUT /api/projects/:id - Update details
+- DELETE /api/projects/:id - Delete project and all assets
 
 ### File Operations
-- `POST /api/projects/:id/files` - Multi-file upload
-- `GET /api/projects/:id/files` - List project files
-- `DELETE /api/projects/:id/files/:fileId` - Delete specific file
-- `GET /api/projects/:id/files/:fileId/download` - Download file
+- POST /api/projects/:id/files - Multi-file upload
+- GET /api/projects/:id/files - List project files
+- DELETE /api/projects/:id/files/:fileId - Delete specific file
+- GET /api/projects/:id/files/:fileId/download - Download file
 
 ### Background Jobs
-- `POST /api/projects/:id/jobs/zip` - Start ZIP job (Worker Thread)
-- `GET /api/projects/:id/jobs/:jobId` - Check status & progress
+- POST /api/projects/:id/jobs/zip - Start ZIP job (Worker Thread)
+- GET /api/projects/:id/jobs/:jobId - Check status & progress
 
 ---
 
 ## Setup & Installation
 
-1. **Install Dependencies**: `npm install`
-2. **Environment**: Configure `.env` .env.dev and .env.prod with DB credentials and upload path.
-3. **Run**: `npm run dev`
+1. **Install Dependencies**: npm install
+2. **Environment**: Configure .env .env.dev and .env.prod with DB credentials and upload path.
+3. **Run**: npm run dev

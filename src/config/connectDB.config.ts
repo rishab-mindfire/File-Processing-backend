@@ -17,9 +17,7 @@ const connectDB = async () => {
       .connect(connectionString, options)
       .then((res) => {
         if (res) {
-          console.log(
-            `Database connection successfully ! : ${connectionString}`,
-          );
+          console.log(`Database connected successfully ! `);
         }
       })
       .catch((err) => {

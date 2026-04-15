@@ -1,8 +1,9 @@
-import { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken";
-import { verifyEmplyeeRole } from "../services/authRole";
-import { verifyTokenAndGetUser } from "../services/authGeneral";
+import { NextFunction, Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
+import { verifyEmplyeeRole } from '../services/authRole';
+import { verifyTokenAndGetUser } from '../services/authGeneral';
 
+//default request will be found email type declaration
 declare global {
   namespace Express {
     interface Request {
@@ -13,17 +14,17 @@ declare global {
 
 function authRoleBased(...allowedRoles: any) {
   const secret = process.env.JWT_SECRETE;
-
+  // check token in each incomming request
   return async (req: Request, res: Response, next: NextFunction) => {
-    var userToken = req?.headers["authorization"]?.toString();
-    const token = userToken && userToken.split(" ")[1];
+    var userToken = req?.headers['authorization']?.toString();
+    const token = userToken && userToken.split(' ')[1];
     if (!token) {
-      res.status(404).send("token not found !");
+      res.status(404).send('token not found !');
       return;
     }
     const user = verifyTokenAndGetUser(token);
     if (!user) {
-      res.status(405).send("Invalid token, please login!");
+      res.status(405).send('Invalid token, please login!');
       return;
     }
     try {
@@ -33,7 +34,7 @@ function authRoleBased(...allowedRoles: any) {
           .userEmail;
         const userRole = await verifyEmplyeeRole(userEmail);
         if (!allowedRoles.includes(userRole))
-          return res.status(404).send("User not authorized !");
+          return res.status(404).send('User not authorized !');
         else {
           req.userEmail = userEmail;
           next();

@@ -29,7 +29,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-//routes
+// routes
 app.use('/user', userRouter);
 app.use('/projects', authRoleBased('admin'), projectRoute);
 

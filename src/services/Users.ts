@@ -1,4 +1,4 @@
-import { UsersModel } from '../models/Users';
+import { UsersModel } from '../models/users';
 import bcrypt from 'bcrypt';
 import { UserType } from '../types';
 import { generateCustomId } from '../utils/randomId';
@@ -17,14 +17,11 @@ class users {
   }
   async checkEmail(email: string) {
     try {
-      const isEmail = await UsersModel.findOne({ userEmail: email });
-      if (isEmail === null) {
-        return false;
-      } else if (isEmail) {
-        return true;
-      }
+      const user = await UsersModel.findOne({ userEmail: email });
+      return user;
     } catch (error) {
       console.log(error);
+      return null;
     }
   }
   async checkSigninPassword(userEmail: string, password: string) {

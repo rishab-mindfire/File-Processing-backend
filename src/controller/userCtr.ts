@@ -1,17 +1,24 @@
 import { Request, Response } from 'express';
-import { userServices } from '../services/Users';
+import { userServices } from '../services/users';
 import { generateToken } from '../services/authGeneral';
 import {
   UserChangePassword,
   UserLoginValidation,
   UserRegistrationValidation,
-} from '../Validation/UserRegistration';
-import { UsersModel } from '../models/Users';
+} from '../Validation/userRegistration';
+import { UsersModel } from '../models/users';
 import { verifyEmplyeeRole } from '../services/authRole';
 
 class userClass {
+  //create user detault admin
   userRegistration = async (req: Request, res: Response) => {
     const data = req.body;
+    if (!data) {
+      return res.status(400).json({
+        message: 'provide body',
+      });
+    }
+
     //validating the registarion request
     const { error, value } = UserRegistrationValidation.validate(data);
     if (error) return res.send(error.message);
@@ -24,6 +31,7 @@ class userClass {
       res.status(409).send('Email allready exists !');
     }
   };
+  //login
   userLogin = async (req: Request, res: Response) => {
     if (!req.body || Object.keys(req.body).length === 0) {
       return res
@@ -45,11 +53,10 @@ class userClass {
         userEmail,
         password,
       );
-
       if (!checkPassword) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
-
+      //generate JWT and attach to response header
       const JWTtoken = generateToken({ userEmail });
       const userRole = await verifyEmplyeeRole(userEmail);
 
@@ -62,6 +69,7 @@ class userClass {
       return res.status(500).json({ message: 'Internal Server Error' });
     }
   };
+  //cahnge pass
   userChangePassword = async (req: Request, res: Response) => {
     const data = req.body;
     const { value, error } = UserChangePassword.validate(data);

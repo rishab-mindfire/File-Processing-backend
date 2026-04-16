@@ -1,14 +1,14 @@
 import { Request, Response } from 'express';
 import { ProjectServices } from '../services/projectsServices';
 import { userServices } from '../services/users';
-import { createProjectSchema } from '../Validation/projectValidation';
+import { projectSchema } from '../Validation/projectValidation';
 import mongoose from 'mongoose';
 
 class projectClass {
   // create project
   createProject = async (req: Request, res: Response) => {
     try {
-      const { error, value } = createProjectSchema.validate(req.body);
+      const { error, value } = projectSchema.validate(req.body);
       if (error) {
         return res.status(400).json({
           error: error.message,
@@ -16,6 +16,7 @@ class projectClass {
       }
       const { projectName, projectDescription } = value;
       const email = req.userEmail;
+
       if (!email) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
@@ -27,7 +28,7 @@ class projectClass {
         return res.status(404).json({ error: 'Project name required' });
       }
 
-      // Create project with the user id found in token amke it owner
+      // Create project with the user id found in token
       const project = await ProjectServices.createNewProject({
         projectName: projectName,
         projectDescription: projectDescription,
@@ -37,6 +38,30 @@ class projectClass {
       res.status(201).json(project);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
+    }
+  };
+
+  //Update project based on project-ID
+  updateProject = async (req: Request, res: Response) => {
+    try {
+      const id = req.params.projectId as string;
+      // Validate projectId
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
+
+      // Validate body
+      const { error, value } = projectSchema.validate(req.body);
+      if (error) {
+        return res.status(400).json({ error: error.message });
+      }
+
+      // Update project
+      const updatedProject = await ProjectServices.updateProject(id, value);
+
+      res.status(200).json(updatedProject);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   };
 
@@ -59,7 +84,6 @@ class projectClass {
       }
 
       const projectWithStats = await ProjectServices.getProjectWithStats(id);
-
       if (!projectWithStats) {
         return res.status(404).json({ message: 'Project not found' });
       }
@@ -69,6 +93,7 @@ class projectClass {
       res.status(500).json({ error: error.message });
     }
   };
+
   // delete project
   deleteProject = async (req: Request, res: Response) => {
     try {

@@ -1,6 +1,6 @@
 import Joi from 'joi';
 
-export const createProjectSchema = Joi.object({
+export const projectSchema = Joi.object({
   projectName: Joi.string().trim().min(3).max(100).required().messages({
     'string.empty': 'Project name is required',
     'string.min': 'Project name must be at least 3 characters',

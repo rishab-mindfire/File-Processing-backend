@@ -5,6 +5,7 @@ import JobModel from '../models/jobModel';
 import ProjectModel from '../models/projectModel';
 
 export class ProjectServices {
+  //Create Project
   static async createNewProject(data: {
     projectName: string;
     projectDescription?: string;
@@ -60,6 +61,15 @@ export class ProjectServices {
       },
     ]);
   }
+
+  //update project
+  static updateProject = async (id: string, data: any) => {
+    return await ProjectModel.findByIdAndUpdate(
+      id,
+      { $set: data },
+      { new: true },
+    );
+  };
 
   // Get Project Details with basic stats
   static async getProjectWithStats(projectId: string) {
@@ -131,6 +141,8 @@ export class ProjectServices {
       ProjectModel.findByIdAndDelete(projectId),
     ]);
 
-    return { message: 'Project and all physical files deleted successfully' };
+    return {
+      message: 'Project and all associated files and jobs deleted successfully',
+    };
   }
 }

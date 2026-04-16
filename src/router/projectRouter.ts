@@ -14,6 +14,7 @@ export const projectRoute = Router();
 projectRoute.post('/', ProjectCtr.createProject);
 projectRoute.get('/', ProjectCtr.listProjects);
 projectRoute.get('/:projectId', ProjectCtr.viewProject);
+projectRoute.put('/:projectId', ProjectCtr.updateProject);
 projectRoute.delete('/:projectId', ProjectCtr.deleteProject);
 
 // File Operations

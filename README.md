@@ -2,7 +2,8 @@
 
 A Node.js backend system where Projects are the primary domain entity, owning files and background processing jobs.
 
-MONGODB will be used for storage 
+MONGODB is used for storage 
+files are saved on server local disk
 
 ### 1. users Table (Authentication)
 - userID, userName, userEmail, password, role

@@ -4,7 +4,6 @@ import JobModel from '../models/jobModel';
 import FileModel from '../models/fileModel';
 import { JobService } from '../services/jobService';
 import { fileZipSchema } from '../Validation/zipFileValidation';
-import ProjectModel from '../models/projectModel';
 
 export class JobCtr {
   // create zip creation job
@@ -60,7 +59,7 @@ export class JobCtr {
     }
   };
   // get all ziped project based on project id
-  static getProjectZips = async (req: Request, res: Response) => {
+  static getZipsDetailsList = async (req: Request, res: Response) => {
     try {
       const { projectId: projectId } = req.params as { projectId: string };
       if (!mongoose.Types.ObjectId.isValid(projectId)) {

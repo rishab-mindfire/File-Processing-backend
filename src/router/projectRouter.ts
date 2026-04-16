@@ -18,12 +18,12 @@ projectRoute.delete('/:projectId', ProjectCtr.deleteProject);
 
 // File Operations
 projectRoute.post('/:projectId/files', upload.any(), fileCtr.uploadFiles);
-projectRoute.get('/:projectId/files', fileCtr.listFiles);
+projectRoute.get('/:projectId/files', fileCtr.getFileDetailsList);
 projectRoute.get('/:projectId/files/:fileId/download', fileCtr.downloadFile);
 projectRoute.delete('/:projectId/files/:fileId', fileCtr.deleteFile);
 
 // Jobs creation ZIP of files
 projectRoute.post('/:projectId/jobs/zip', JobCtr.createZipJob);
-projectRoute.get('/:projectId/zip', JobCtr.getProjectZips);
+projectRoute.get('/:projectId/zip', JobCtr.getZipsDetailsList);
 projectRoute.get('/:projectId/jobs/:jobId', JobCtr.getJobStatus);
 projectRoute.get('/:projectId/jobs/:jobId/download', JobCtr.downloadZip);

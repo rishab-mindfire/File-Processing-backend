@@ -14,7 +14,7 @@ export const fileZipSchema = Joi.object({
     .min(1)
     .required()
     .messages({
-      'any.invalid': 'Invalid fileId format',
+      'any.invalid': 'File does not belong to this project',
       'array.min': 'fileIds cannot be empty',
     }),
 });

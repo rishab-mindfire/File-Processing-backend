@@ -8,11 +8,10 @@ export class fileCtr {
   static uploadFiles = async (req: Request, res: Response) => {
     try {
       const { projectId: projectId } = req.params as { projectId: string };
-      const project = await ProjectModel.findById(projectId);
       if (!mongoose.Types.ObjectId.isValid(projectId)) {
         return res.status(400).json({ error: 'Invalid projectId' });
       }
-
+      const project = await ProjectModel.findById(projectId);
       if (!project) {
         return res.json({ status: 400, message: 'Project not found' });
       }
@@ -34,7 +33,7 @@ export class fileCtr {
   };
 
   // list files based on project ID
-  static listFiles = async (req: Request, res: Response) => {
+  static getFileDetailsList = async (req: Request, res: Response) => {
     try {
       const { projectId: projectId } = req.params as { projectId: string };
       if (!mongoose.Types.ObjectId.isValid(projectId)) {
@@ -89,7 +88,7 @@ export class fileCtr {
         return res.status(400).json({ error: 'Invalid projectId' });
       }
 
-      await FileService.downloadFile(fileId, res);
+      await FileService.downloadFile({ fileId, projectId }, res);
     } catch (error: any) {
       console.error('Download error:', error);
 

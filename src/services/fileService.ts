@@ -94,33 +94,51 @@ export class FileService {
       console.error('Error deleting file from disk:', err);
     }
 
-    // 4. Delete DB record
+    // Delete DB record
     await FileModel.findByIdAndDelete(fileId);
 
     return { message: 'File deleted successfully' };
   }
   // download file based on file id
-  static async downloadFile(fileId: string, res: Response) {
-    const fileDoc = await FileModel.findById(fileId);
-    if (!fileDoc) throw { status: 404, message: 'File not found' };
+  static async downloadFile(
+    requestParam: { fileId: string; projectId: string },
+    res: Response,
+  ) {
+    const { fileId, projectId } = requestParam;
 
+    // Fetch ONLY if file belongs to project
+    const fileDoc = await FileModel.findOne({
+      _id: fileId,
+      projectId: projectId,
+    });
+    if (!fileDoc) {
+      throw { status: 404, message: 'File not found for this project' };
+    }
+
+    // Check physical file
     if (!fs.existsSync(fileDoc.storagePath)) {
       throw { status: 404, message: 'Physical file missing from storage' };
     }
 
+    // Headers
     res.setHeader(
       'Content-Type',
       fileDoc.mimeType || 'application/octet-stream',
     );
+
     res.setHeader(
       'Content-Disposition',
       `attachment; filename="${fileDoc.name}"`,
     );
 
+    // Stream
     const readStream = fs.createReadStream(fileDoc.storagePath);
+
     readStream.on('error', (err) => {
       console.error('Stream error:', err);
-      if (!res.headersSent) res.status(500).json({ error: 'Stream failure' });
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Stream failure' });
+      }
     });
 
     readStream.pipe(res);

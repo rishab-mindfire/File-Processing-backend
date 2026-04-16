@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { ProjectServices } from '../services/projectsServices';
 import { userServices } from '../services/users';
 import { createProjectSchema } from '../Validation/projectValidation';
+import mongoose from 'mongoose';
 
 class projectClass {
   // create project
@@ -51,8 +52,12 @@ class projectClass {
 
   // Gets specific project details with fileCount and jobCount
   viewProject = async (req: Request, res: Response) => {
+    const id = req.params.projectId as string;
     try {
-      const id = req.params.projectId as string;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
+
       const projectWithStats = await ProjectServices.getProjectWithStats(id);
 
       if (!projectWithStats) {

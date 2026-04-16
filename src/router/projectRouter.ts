@@ -20,6 +20,7 @@ projectRoute.delete('/:id', ProjectCtr.deleteProject);
 projectRoute.post('/:id/files', upload.any(), fileCtr.uploadFiles);
 projectRoute.get('/:id/files', fileCtr.listFiles);
 projectRoute.get('/:id/files/:fileId/download', fileCtr.downloadFile);
+projectRoute.delete('/:id/files/:fileId', fileCtr.deleteFile);
 
 // Background Jobs for ZIP
 projectRoute.post('/:id/jobs/zip', JobCtr.createZipJob);

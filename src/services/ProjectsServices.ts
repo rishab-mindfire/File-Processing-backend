@@ -14,6 +14,53 @@ export class ProjectServices {
     return await project.save();
   }
 
+  // Lists all projects with file/zip counts
+  static async listAllProjects() {
+    return await ProjectModel.aggregate([
+      { $sort: { createdAt: -1 } },
+
+      {
+        $lookup: {
+          from: 'files',
+          localField: '_id',
+          foreignField: 'projectId',
+          as: 'files',
+        },
+      },
+
+      {
+        $lookup: {
+          from: 'zipjobs',
+          localField: '_id',
+          foreignField: 'projectId',
+          as: 'jobs',
+        },
+      },
+
+      {
+        $addFields: {
+          totalFiles: { $size: '$files' },
+          totalZips: {
+            $size: {
+              $filter: {
+                input: '$jobs',
+                as: 'job',
+                cond: { $eq: ['$$job.status', 'COMPLETED'] },
+              },
+            },
+          },
+        },
+      },
+
+      {
+        $project: {
+          files: 0,
+          jobs: 0,
+        },
+      },
+    ]);
+  }
+
   // Get Project Details with basic stats
   static async getProjectWithStats(projectId: string) {
     const id = new mongoose.Types.ObjectId(projectId);
@@ -22,7 +69,7 @@ export class ProjectServices {
       { $match: { _id: id } },
       {
         $lookup: {
-          from: 'filemodels',
+          from: 'files',
           localField: '_id',
           foreignField: 'projectId',
           as: 'files',
@@ -30,7 +77,7 @@ export class ProjectServices {
       },
       {
         $lookup: {
-          from: 'jobmodels',
+          from: 'zipjobs',
           localField: '_id',
           foreignField: 'projectId',
           as: 'jobs',
@@ -48,44 +95,6 @@ export class ProjectServices {
     ]);
 
     return stats[0];
-  }
-
-  // Lists all projects with file/zip counts
-  static async listAllProjects() {
-    return await ProjectModel.aggregate([
-      { $sort: { createdAt: -1 } },
-      {
-        $lookup: {
-          from: 'filemodels',
-          localField: '_id',
-          foreignField: 'projectId',
-          as: 'files',
-        },
-      },
-      {
-        $lookup: {
-          from: 'jobmodels',
-          localField: '_id',
-          foreignField: 'projectId',
-          as: 'jobs',
-        },
-      },
-      {
-        $addFields: {
-          totalFiles: { $size: '$files' },
-          totalZips: {
-            $size: {
-              $filter: {
-                input: '$jobs',
-                as: 'job',
-                cond: { $eq: ['$$job.status', 'COMPLETED'] },
-              },
-            },
-          },
-        },
-      },
-      { $project: { files: 0, jobs: 0 } },
-    ]);
   }
 
   // delete project with clean-up

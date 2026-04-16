@@ -5,7 +5,7 @@ import { IFile } from '../types';
 const fileSchema = new Schema<IFile>(
   {
     projectId: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: 'Project',
       required: true,
     },

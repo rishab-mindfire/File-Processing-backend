@@ -10,37 +10,38 @@ export class JobCtr {
   static createZipJob = async (req: Request, res: Response) => {
     try {
       const { id: projectId } = req.params as { id: string };
-      //validation
+
+      //Validate input files
       const result = fileZipSchema.validate(req.body);
       if (result.error || !result.value) {
         return res.status(400).json({
           error: result.error?.message || 'Add files',
         });
       }
+
       const { fileIds } = result.value;
 
-      // add entry in db that file processing states
+      // Fetch valid files FIRST
+      const selectedFiles = await FileModel.find({
+        _id: { $in: fileIds },
+        projectId,
+      });
+
+      if (selectedFiles.length === 0) {
+        return res.status(404).json({
+          error: 'No valid files found for this project',
+        });
+      }
+
+      // Create job ONLY if valid files exist
       const job = await JobModel.create({
         projectId,
         status: 'PROCESSING',
         startedAt: new Date(),
       });
 
-      const selectedFiles = await FileModel.find({
-        _id: { $in: fileIds },
-        projectId,
-      });
-      if (selectedFiles.length === 0) {
-        await JobModel.findByIdAndUpdate(job._id, {
-          status: 'FAILED',
-          error: 'No valid files found',
-        });
-
-        return res.status(404).json({ error: 'No files found' });
-      }
-
-      // process with selected files zip-workers
-      JobService.startZipWorker({
+      // Start background worker
+      JobService.createZip({
         job,
         projectId,
         selectedFiles,

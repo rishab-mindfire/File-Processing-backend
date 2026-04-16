@@ -37,6 +37,23 @@ export class fileCtr {
       });
     }
   };
+
+  // download files
+  static deleteFile = async (req: Request, res: Response) => {
+    try {
+      const { fileId } = req.params as { fileId: string };
+
+      const result = await FileService.deleteFile(fileId);
+      return res.status(200).json(result);
+    } catch (error: any) {
+      console.error('Delete file error:', error);
+
+      res.status(error.status || 500).json({
+        error: error.message || 'Internal Server Error',
+      });
+    }
+  };
+
   // download files
   static downloadFile = async (req: Request, res: Response) => {
     try {

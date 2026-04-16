@@ -5,6 +5,7 @@ import fs from 'fs';
 import { Response } from 'express';
 import FileModel from '../models/fileModel';
 import JobModel from '../models/jobModel';
+import ProjectModel from '../models/projectModel';
 
 const ZIPS_DIR = path.resolve(process.env.UPLOAD_PATH_ZIPS || './uploads/zips');
 const ensureDirectoryExists = (dirPath: string) => {
@@ -19,7 +20,7 @@ ensureDirectoryExists(ZIPS_DIR);
 
 export class JobService {
   // create Zip of files based on array of files id
-  static startZipWorker({
+  static async createZip({
     job,
     projectId,
     selectedFiles,
@@ -28,6 +29,12 @@ export class JobService {
     projectId: string;
     selectedFiles: any[];
   }) {
+    // check existence of project
+    const project = await ProjectModel.findById(projectId);
+    if (!project) {
+      throw { status: 400, message: 'Project not found' };
+    }
+
     // Resolve path
     const workerPath = path.resolve(__dirname, '../workers/zip-Worker.js');
 

@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import { Response } from 'express';
 import FileModel from '../models/fileModel';
 import { fileSchema } from '../Validation/fileValidation';
+import ProjectModel from '../models/projectModel';
 
 const FILES_DIR = path.resolve(
   process.env.UPLOAD_PATH_FILES || './uploads/files',
@@ -22,6 +23,11 @@ ensureDirectoryExists(FILES_DIR);
 export class FileService {
   // upload files
   static async uploadFiles(projectId: string, files: Express.Multer.File[]) {
+    // check existence of project
+    const project = await ProjectModel.findById(projectId);
+    if (!project) {
+      throw { status: 400, message: 'Project not found' };
+    }
     if (!files || files.length === 0) {
       throw { status: 400, message: 'No files uploaded' };
     }
@@ -65,7 +71,7 @@ export class FileService {
 
     return await Promise.all(uploadPromises);
   }
-
+  // list fileDetails
   static async listFiles(projectId: string) {
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
       throw { status: 400, message: 'Invalid Project ID' };
@@ -76,7 +82,38 @@ export class FileService {
       .sort({ createdAt: -1 })
       .lean();
   }
+  // delete file by fileId
+  static async deleteFile(fileId: string) {
+    //  Validate field ID
+    if (!mongoose.Types.ObjectId.isValid(fileId)) {
+      throw { status: 400, message: 'Invalid fileId' };
+    }
 
+    // Find file in DB
+    const fileDoc = await FileModel.findById(fileId);
+    if (!fileDoc) {
+      throw { status: 404, message: 'File not found' };
+    }
+
+    //  Delete physical file (if exists)
+    try {
+      const fullPath = path.resolve(fileDoc.storagePath);
+
+      if (fs.existsSync(fullPath)) {
+        await fs.promises.unlink(fullPath);
+        console.log('Deleted file from disk:', fullPath);
+      } else {
+        console.warn('File not found on disk:', fullPath);
+      }
+    } catch (err) {
+      console.error('Error deleting file from disk:', err);
+    }
+
+    // 4. Delete DB record
+    await FileModel.findByIdAndDelete(fileId);
+
+    return { message: 'File deleted successfully' };
+  }
   // download file based on file id
   static async downloadFile(fileId: string, res: Response) {
     if (!mongoose.Types.ObjectId.isValid(fileId)) {

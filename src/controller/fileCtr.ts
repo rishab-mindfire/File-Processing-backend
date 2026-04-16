@@ -1,13 +1,23 @@
 import { Request, Response } from 'express';
 import { FileService } from '../services/fileService';
+import ProjectModel from '../models/projectModel';
+import mongoose from 'mongoose';
 
 export class fileCtr {
   // upload files based on project id
   static uploadFiles = async (req: Request, res: Response) => {
     try {
-      const { id: projectId } = req.params as { id: string };
-      const files = req.files as Express.Multer.File[];
+      const { projectId: projectId } = req.params as { projectId: string };
+      const project = await ProjectModel.findById(projectId);
+      if (!mongoose.Types.ObjectId.isValid(projectId)) {
+        return res.status(400).json({ error: 'Invalid projectId' });
+      }
 
+      if (!project) {
+        return res.json({ status: 400, message: 'Project not found' });
+      }
+
+      const files = req.files as Express.Multer.File[];
       const results = await FileService.uploadFiles(projectId, files);
 
       res.status(201).json({
@@ -26,7 +36,15 @@ export class fileCtr {
   // list files based on project ID
   static listFiles = async (req: Request, res: Response) => {
     try {
-      const { id: projectId } = req.params as { id: string };
+      const { projectId: projectId } = req.params as { projectId: string };
+      if (!mongoose.Types.ObjectId.isValid(projectId)) {
+        return res.status(400).json({ error: 'Invalid projectId' });
+      }
+
+      const project = await ProjectModel.findById(projectId);
+      if (!project) {
+        return res.json({ status: 400, message: 'Project not found' });
+      }
 
       const files = await FileService.listFiles(projectId);
 
@@ -38,10 +56,16 @@ export class fileCtr {
     }
   };
 
-  // download files
+  // delete file
   static deleteFile = async (req: Request, res: Response) => {
     try {
-      const { fileId } = req.params as { fileId: string };
+      const { fileId, projectId } = req.params as {
+        fileId: string;
+        projectId: string;
+      };
+      if (!mongoose.Types.ObjectId.isValid(projectId)) {
+        return res.status(400).json({ error: 'Invalid projectId' });
+      }
 
       const result = await FileService.deleteFile(fileId);
       return res.status(200).json(result);
@@ -57,7 +81,13 @@ export class fileCtr {
   // download files
   static downloadFile = async (req: Request, res: Response) => {
     try {
-      const { fileId } = req.params as { fileId: string };
+      const { fileId, projectId } = req.params as {
+        fileId: string;
+        projectId: string;
+      };
+      if (!mongoose.Types.ObjectId.isValid(projectId)) {
+        return res.status(400).json({ error: 'Invalid projectId' });
+      }
 
       await FileService.downloadFile(fileId, res);
     } catch (error: any) {

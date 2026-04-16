@@ -4,12 +4,16 @@ import JobModel from '../models/jobModel';
 import FileModel from '../models/fileModel';
 import { JobService } from '../services/jobService';
 import { fileZipSchema } from '../Validation/zipFileValidation';
+import ProjectModel from '../models/projectModel';
 
 export class JobCtr {
   // create zip creation job
   static createZipJob = async (req: Request, res: Response) => {
     try {
-      const { id: projectId } = req.params as { id: string };
+      const { projectId: projectId } = req.params as { projectId: string };
+      if (!mongoose.Types.ObjectId.isValid(projectId)) {
+        return res.status(400).json({ error: 'Invalid projectId' });
+      }
 
       //Validate input files
       const result = fileZipSchema.validate(req.body);
@@ -58,7 +62,11 @@ export class JobCtr {
   // get all ziped project based on project id
   static getProjectZips = async (req: Request, res: Response) => {
     try {
-      const { id: projectId } = req.params as { id: string };
+      const { projectId: projectId } = req.params as { projectId: string };
+      if (!mongoose.Types.ObjectId.isValid(projectId)) {
+        return res.status(400).json({ error: 'Invalid projectId' });
+      }
+
       const zips = await JobService.listZips(projectId);
       res.status(200).json(zips);
     } catch (error: any) {
@@ -68,7 +76,13 @@ export class JobCtr {
   // check job status of zip file based on job-id form db
   static getJobStatus = async (req: Request, res: Response) => {
     try {
-      const { jobId } = req.params as { jobId: string };
+      const { jobId, projectId } = req.params as {
+        jobId: string;
+        projectId: string;
+      };
+      if (!mongoose.Types.ObjectId.isValid(projectId)) {
+        return res.status(400).json({ error: 'Invalid projectId' });
+      }
 
       // Validate ObjectId format
       if (!mongoose.Types.ObjectId.isValid(jobId)) {
@@ -92,7 +106,13 @@ export class JobCtr {
   // download zip with job-ID
   static downloadZip = async (req: Request, res: Response) => {
     try {
-      const { jobId } = req.params as { jobId: string };
+      const { jobId, projectId } = req.params as {
+        jobId: string;
+        projectId: string;
+      };
+      if (!mongoose.Types.ObjectId.isValid(projectId)) {
+        return res.status(400).json({ error: 'Invalid projectId' });
+      }
 
       await JobService.downloadZip(jobId, res);
     } catch (error: any) {

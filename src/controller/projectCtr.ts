@@ -52,7 +52,7 @@ class projectClass {
   // Gets specific project details with fileCount and jobCount
   viewProject = async (req: Request, res: Response) => {
     try {
-      const id = req.params.id as string;
+      const id = req.params.projectId as string;
       const projectWithStats = await ProjectServices.getProjectWithStats(id);
 
       if (!projectWithStats) {
@@ -67,9 +67,9 @@ class projectClass {
   // delete project
   deleteProject = async (req: Request, res: Response) => {
     try {
-      const { id } = req.params as { id: string };
+      const { projectId } = req.params as { projectId: string };
 
-      const result = await ProjectServices.deleteProject(id);
+      const result = await ProjectServices.deleteProject(projectId);
 
       res.status(200).json(result);
     } catch (error: any) {

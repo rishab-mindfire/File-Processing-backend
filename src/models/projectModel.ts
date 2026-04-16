@@ -16,7 +16,7 @@ const projectSchema = new Schema<IProject>(
   },
 );
 
-// Indexing
+// Indexing owner
 projectSchema.index({ owner: 1 });
 
 const Project = mongoose.model<IProject>('Project', projectSchema);

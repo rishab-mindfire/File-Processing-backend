@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-//user registration
+// User Registration
 export interface UserType {
   userID: string;
   userName: string;
@@ -8,14 +8,14 @@ export interface UserType {
   password: string;
   role: string;
 }
-//user login
+
+// User Login
 export interface IUserLogin {
   userEmail: string;
   password: string;
 }
 
-//
-// project
+// Project
 export interface IProject {
   projectName: string;
   projectDescription?: string;
@@ -24,31 +24,26 @@ export interface IProject {
   updatedAt: Date;
 }
 
-///file
-export interface MulterFile {
-  originalname: string;
-  path: string;
-  size: number;
-  mimetype: string;
-}
-
-export interface IFile extends Document {
+// File (Physical Disk Version)
+// Note: Removed "extends Document" for cleaner Schema mapping
+export interface IFile {
   projectId: mongoose.Types.ObjectId;
   name: string;
-  fileId: mongoose.Types.ObjectId; // GridFS reference
+  storagePath: string; // Absolute path on server disk
   size: number;
   mimeType: string;
-  isGenerated: boolean;
+  isGenerated?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-// zip
-
-export interface IJob extends Document {
+// Job (Zip Compression)
+export interface IJob {
   projectId: mongoose.Types.ObjectId;
   type: 'ZIP_COMPRESSION';
   status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
   progress: number;
-  outputFileId?: mongoose.Types.ObjectId;
+  outputFileId?: mongoose.Types.ObjectId; // Points to the _id in File collection
   error?: string;
   startedAt?: Date;
   completedAt?: Date;

@@ -6,19 +6,20 @@ import { JobService } from '../services/jobService';
 import { fileZipSchema } from '../Validation/zipFileValidation';
 
 export class JobCtr {
+  // create zip creation job
   static createZipJob = async (req: Request, res: Response) => {
     try {
       const { id: projectId } = req.params as { id: string };
+      //validation
       const result = fileZipSchema.validate(req.body);
-
       if (result.error || !result.value) {
         return res.status(400).json({
           error: result.error?.message || 'Add files',
         });
       }
-
       const { fileIds } = result.value;
 
+      // add entry in db that file processing states
       const job = await JobModel.create({
         projectId,
         status: 'PROCESSING',
@@ -26,10 +27,9 @@ export class JobCtr {
       });
 
       const selectedFiles = await FileModel.find({
-        fileId: { $in: fileIds },
+        _id: { $in: fileIds },
         projectId,
       });
-
       if (selectedFiles.length === 0) {
         await JobModel.findByIdAndUpdate(job._id, {
           status: 'FAILED',
@@ -54,7 +54,17 @@ export class JobCtr {
       res.status(500).json({ error: error.message });
     }
   };
-
+  // get all ziped project based on project id
+  static getProjectZips = async (req: Request, res: Response) => {
+    try {
+      const { id: projectId } = req.params as { id: string };
+      const zips = await JobService.listZips(projectId);
+      res.status(200).json(zips);
+    } catch (error: any) {
+      res.status(error.status || 500).json({ message: error.message });
+    }
+  };
+  // check job status of zip file based on job-id form db
   static getJobStatus = async (req: Request, res: Response) => {
     try {
       const { jobId } = req.params as { jobId: string };
@@ -78,11 +88,12 @@ export class JobCtr {
     }
   };
 
+  // download zip with job-ID
   static downloadZip = async (req: Request, res: Response) => {
     try {
       const { jobId } = req.params as { jobId: string };
 
-      await JobService.streamZipToResponse(jobId, res);
+      await JobService.downloadZip(jobId, res);
     } catch (error: any) {
       console.error('Download error:', error);
 

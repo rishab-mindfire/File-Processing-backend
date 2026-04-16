@@ -26,7 +26,7 @@ class projectClass {
         return res.status(404).json({ error: 'Project name required' });
       }
 
-      // Create project with the user id found in token
+      // Create project with the user id found in token amke it owner
       const project = await ProjectServices.createNewProject({
         projectName: projectName,
         projectDescription: projectDescription,

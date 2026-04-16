@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import { UserType } from '../types';
 import { generateCustomId } from '../utils/randomId';
 
-class users {
+class Users {
   async createUser(data: UserType) {
     try {
       const newPass = await bcrypt.hash(data.password.toString(), 10);
@@ -37,4 +37,4 @@ class users {
   }
 }
 
-export const userServices = new users();
+export const userServices = new Users();

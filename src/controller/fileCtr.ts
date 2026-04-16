@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { FileService } from '../services/fileService';
 
 export class fileCtr {
-  // upload files based on projects
+  // upload files based on project id
   static uploadFiles = async (req: Request, res: Response) => {
     try {
       const { id: projectId } = req.params as { id: string };
@@ -23,8 +23,8 @@ export class fileCtr {
     }
   };
 
+  // list files based on project ID
   static listFiles = async (req: Request, res: Response) => {
-    // list files based on project ID
     try {
       const { id: projectId } = req.params as { id: string };
 
@@ -42,7 +42,7 @@ export class fileCtr {
     try {
       const { fileId } = req.params as { fileId: string };
 
-      await FileService.streamFile(fileId, res);
+      await FileService.downloadFile(fileId, res);
     } catch (error: any) {
       console.error('Download error:', error);
 

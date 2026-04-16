@@ -26,7 +26,7 @@ const jobSchema = new Schema<IJob>(
     },
     outputFileId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'FileModel',
+      ref: 'File',
     },
     error: { type: String },
     startedAt: { type: Date },
@@ -35,8 +35,8 @@ const jobSchema = new Schema<IJob>(
   { timestamps: true },
 );
 
-// Indexing for quick status monitoring and project-specific job listing
+// Indexing project id and status
 jobSchema.index({ projectId: 1, status: 1 });
 
-const JobModel = mongoose.model<IJob>('JobModel', jobSchema);
+const JobModel = mongoose.model<IJob>('zipJob', jobSchema);
 export default JobModel;

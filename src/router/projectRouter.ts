@@ -23,5 +23,6 @@ projectRoute.get('/:id/files/:fileId/download', fileCtr.downloadFile);
 
 // Background Jobs for ZIP
 projectRoute.post('/:id/jobs/zip', JobCtr.createZipJob);
+projectRoute.get('/:id/zip', JobCtr.getProjectZips);
 projectRoute.get('/:id/jobs/:jobId', JobCtr.getJobStatus);
 projectRoute.get('/:id/jobs/:jobId/download', JobCtr.downloadZip);

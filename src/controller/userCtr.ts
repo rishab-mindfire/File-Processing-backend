@@ -72,7 +72,6 @@ class userClass {
   //cahnge pass
   userChangePassword = async (req: Request, res: Response) => {
     const data = req.body;
-    const { value, error } = UserChangePassword.validate(data);
     const user = await UsersModel.findOne({ userEmail: req.body.userEmail });
     if (user) {
       res.status(200).send(user);

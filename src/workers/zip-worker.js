@@ -1,51 +1,50 @@
 const { parentPort, workerData } = require('worker_threads');
-const mongoose = require('mongoose');
 const archiver = require('archiver');
+const fs = require('fs');
+const path = require('path');
 
 async function run() {
+  const { files, projectId, outputDir } = workerData;
+
   try {
-    if (!mongoose.connection.readyState) {
-      await mongoose.connect(workerData.dbUri);
-    }
+    // Setup the output zip file path
+    const zipName = `project_${projectId}_${Date.now()}.zip`;
+    const outputPath = path.join(outputDir, zipName);
 
-    const db = mongoose.connection.db;
-    if (!db) throw new Error('Database connection failed');
-
-    const bucket = new mongoose.mongo.GridFSBucket(db);
-
+    // Create write stream for the ZIP file
+    const output = fs.createWriteStream(outputPath);
     const archive = archiver('zip', { zlib: { level: 9 } });
-    const zipName = `project_${workerData.projectId}_${Date.now()}.zip`;
-    const uploadStream = bucket.openUploadStream(zipName);
 
-    uploadStream.on('finish', async () => {
+    // Listen for completion
+    output.on('close', () => {
       parentPort.postMessage({
         type: 'DONE',
-        gridFsId: uploadStream.id.toString(),
+        outputPath: outputPath,
         name: zipName,
-        size: uploadStream.length,
+        size: archive.pointer(),
       });
-
-      await mongoose.connection.close();
-      process.exit(0);
     });
 
     archive.on('error', (err) => {
       throw err;
     });
 
-    archive.pipe(uploadStream);
+    // Pipe archive data to the file stream
+    archive.pipe(output);
 
-    for (const file of workerData.files) {
-      const downloadStream = bucket.openDownloadStream(
-        new mongoose.Types.ObjectId(file.fileId),
-      );
-      archive.append(downloadStream, { name: file.name });
+    //  Append files from local disk
+    for (const file of files) {
+      // file.path is the absolute path passed
+      if (fs.existsSync(file.path)) {
+        archive.append(fs.createReadStream(file.path), { name: file.name });
+      } else {
+        console.warn(`File not found, skipping: ${file.path}`);
+      }
     }
 
     await archive.finalize();
   } catch (err) {
     parentPort.postMessage({ type: 'ERROR', message: err.message });
-    await mongoose.connection.close();
     process.exit(1);
   }
 }

@@ -1,20 +1,43 @@
 import mongoose, { Schema } from 'mongoose';
 import { IFile } from '../types';
 
+//
 const fileSchema = new Schema<IFile>(
   {
-    projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: true },
-    name: { type: String, required: true },
-    fileId: { type: Schema.Types.ObjectId, required: true }, // Points to fs.files
-    size: { type: Number, required: true },
-    mimeType: { type: String, required: true },
-    isGenerated: { type: Boolean, default: false },
+    projectId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Project',
+      required: true,
+    },
+    name: {
+      type: String,
+      required: true,
+    },
+    storagePath: {
+      type: String,
+      required: true,
+    },
+    size: {
+      type: Number,
+      required: true,
+    },
+    mimeType: {
+      type: String,
+      required: true,
+    },
+    isGenerated: {
+      type: Boolean,
+      default: false,
+    },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+  },
 );
 
-// indexing
+// Indexing project id
 fileSchema.index({ projectId: 1 });
 
-const FileModel = mongoose.model<IFile>('FileModel', fileSchema);
+const FileModel = mongoose.model<IFile>('File', fileSchema);
+
 export default FileModel;

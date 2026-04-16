@@ -1,16 +1,35 @@
-import mongoose from 'mongoose';
-import { Readable } from 'stream';
+import fs from 'fs';
+import path from 'path';
+import { Response } from 'express';
 import FileModel from '../models/fileModel';
 import { fileSchema } from '../Validation/fileValidation';
 
+const FILES_DIR = path.resolve(
+  process.env.UPLOAD_PATH_FILES || './uploads/files',
+);
+
+const ensureDirectoryExists = (dirPath: string) => {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+    console.log(`[Storage] Created directory: ${dirPath}`);
+  }
+};
+
+// create folder upload/files
+ensureDirectoryExists(FILES_DIR);
+
 export class FileService {
-  //  Upload files
+  // upload files
   static async uploadFiles(projectId: string, files: Express.Multer.File[]) {
+    // check file
     if (!files || files.length === 0) {
       throw { status: 400, message: 'No files uploaded' };
     }
 
-    // Validate files
+    // check directory created or not
+    ensureDirectoryExists(FILES_DIR);
+
+    // Validate files before upload
     for (const file of files) {
       const { error } = fileSchema.validate({
         originalname: file.originalname,
@@ -24,77 +43,82 @@ export class FileService {
           message: `Invalid file ${file.originalname}: ${error.message}`,
         };
       }
-
-      if (!file.buffer || file.buffer.length === 0) {
-        throw {
-          status: 400,
-          message: `File ${file.originalname} is empty`,
-        };
-      }
     }
 
-    const db = mongoose.connection.db;
-    if (!db) throw { status: 500, message: 'Database not connected' };
+    const uploadPromises = files.map(async (file) => {
+      // Create unique filename
+      const uniqueName = `${Date.now()}-${file.originalname}`;
+      const storagePath = path.join(FILES_DIR, uniqueName);
 
-    const bucket = new mongoose.mongo.GridFSBucket(db);
-    const uploadPromises = files.map((file) => {
-      return new Promise(async (resolve, reject) => {
-        try {
-          const stream = new Readable();
-          stream.push(file.buffer);
-          stream.push(null);
+      // Write to disk
+      await fs.promises.writeFile(storagePath, file.buffer);
 
-          const uploadStream = bucket.openUploadStream(file.originalname);
-
-          stream
-            .pipe(uploadStream)
-            .on('error', reject)
-            .on('finish', async () => {
-              try {
-                const metadata = await FileModel.create({
-                  projectId,
-                  name: file.originalname,
-                  fileId: uploadStream.id,
-                  size: file.size,
-                  mimeType: file.mimetype,
-                });
-
-                resolve(metadata);
-              } catch (err) {
-                reject(err);
-              }
-            });
-        } catch (err) {
-          reject(err);
-        }
+      return await FileModel.create({
+        projectId,
+        name: file.originalname,
+        storagePath: storagePath,
+        size: file.size,
+        mimeType: file.mimetype,
+        isGenerated: false,
       });
     });
 
     return await Promise.all(uploadPromises);
   }
-
-  //  List files
+  // list fileDetails
   static async listFiles(projectId: string) {
-    return await FileModel.find({ projectId }).sort({ createdAt: -1 });
+    return await FileModel.find({ projectId })
+      .select('name size')
+      .sort({ createdAt: -1 })
+      .lean();
   }
-
-  //  Download file (stream)
-  static async streamFile(fileId: string, res: any) {
-    if (!mongoose.Types.ObjectId.isValid(fileId)) {
-      throw { status: 400, message: 'Invalid fileId' };
-    }
-
-    const objectId = new mongoose.Types.ObjectId(fileId);
-
-    const fileDoc = await FileModel.findOne({ fileId: objectId });
+  // delete file by fileId
+  static async deleteFile(fileId: string) {
+    // Find file in DB
+    const fileDoc = await FileModel.findById(fileId);
     if (!fileDoc) {
       throw { status: 404, message: 'File not found' };
     }
 
-    const db = mongoose.connection.db;
-    if (!db) throw { status: 500, message: 'DB not connected' };
+    //  Delete physical file (if exists)
+    try {
+      const fullPath = path.resolve(fileDoc.storagePath);
 
-    const bucket = new mongoose.mongo.GridFSBucket(db);
+      if (fs.existsSync(fullPath)) {
+        await fs.promises.unlink(fullPath);
+        console.log('Deleted file from disk:', fullPath);
+      } else {
+        console.warn('File not found on disk:', fullPath);
+      }
+    } catch (err) {
+      console.error('Error deleting file from disk:', err);
+    }
+
+    // Delete DB record
+    await FileModel.findByIdAndDelete(fileId);
+
+    return { message: 'File deleted successfully' };
+  }
+  // download file based on file id
+  static async downloadFile(
+    requestParam: { fileId: string; projectId: string },
+    res: Response,
+  ) {
+    const { fileId, projectId } = requestParam;
+
+    // Fetch ONLY if file belongs to project
+    const fileDoc = await FileModel.findOne({
+      _id: fileId,
+      projectId: projectId,
+    });
+    if (!fileDoc) {
+      throw { status: 404, message: 'File not found for this project' };
+    }
+
+    // Check physical file
+    if (!fs.existsSync(fileDoc.storagePath)) {
+      throw { status: 404, message: 'Physical file missing from storage' };
+    }
 
     // Headers
     res.setHeader(
@@ -107,15 +131,16 @@ export class FileService {
       `attachment; filename="${fileDoc.name}"`,
     );
 
-    const downloadStream = bucket.openDownloadStream(objectId);
+    // Stream
+    const readStream = fs.createReadStream(fileDoc.storagePath);
 
-    downloadStream.on('error', (err) => {
-      console.error('Download error:', err);
+    readStream.on('error', (err) => {
+      console.error('Stream error:', err);
       if (!res.headersSent) {
-        res.status(404).json({ error: 'File not found in storage' });
+        res.status(500).json({ error: 'Stream failure' });
       }
     });
 
-    downloadStream.pipe(res);
+    readStream.pipe(res);
   }
 }

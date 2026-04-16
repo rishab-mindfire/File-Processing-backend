@@ -13,15 +13,18 @@ export const projectRoute = Router();
 // Project Management
 projectRoute.post('/', ProjectCtr.createProject);
 projectRoute.get('/', ProjectCtr.listProjects);
-projectRoute.get('/:id', ProjectCtr.viewProject);
-projectRoute.delete('/:id', ProjectCtr.deleteProject);
+projectRoute.get('/:projectId', ProjectCtr.viewProject);
+projectRoute.put('/:projectId', ProjectCtr.updateProject);
+projectRoute.delete('/:projectId', ProjectCtr.deleteProject);
 
 // File Operations
-projectRoute.post('/:id/files', upload.any(), fileCtr.uploadFiles);
-projectRoute.get('/:id/files', fileCtr.listFiles);
-projectRoute.get('/:id/files/:fileId/download', fileCtr.downloadFile);
+projectRoute.post('/:projectId/files', upload.any(), fileCtr.uploadFiles);
+projectRoute.get('/:projectId/files', fileCtr.getFileDetailsList);
+projectRoute.get('/:projectId/files/:fileId/download', fileCtr.downloadFile);
+projectRoute.delete('/:projectId/files/:fileId', fileCtr.deleteFile);
 
-// Background Jobs for ZIP
-projectRoute.post('/:id/jobs/zip', JobCtr.createZipJob);
-projectRoute.get('/:id/jobs/:jobId', JobCtr.getJobStatus);
-projectRoute.get('/:id/jobs/:jobId/download', JobCtr.downloadZip);
+// Jobs creation ZIP of files
+projectRoute.post('/:projectId/jobs/zip', JobCtr.createZipJob);
+projectRoute.get('/:projectId/zip', JobCtr.getZipsDetailsList);
+projectRoute.get('/:projectId/jobs/:jobId', JobCtr.getJobStatus);
+projectRoute.get('/:projectId/jobs/:jobId/download', JobCtr.downloadZip);

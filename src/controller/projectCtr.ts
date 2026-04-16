@@ -1,13 +1,14 @@
 import { Request, Response } from 'express';
 import { ProjectServices } from '../services/projectsServices';
 import { userServices } from '../services/users';
-import { createProjectSchema } from '../Validation/projectValidation';
+import { projectSchema } from '../Validation/projectValidation';
+import mongoose from 'mongoose';
 
 class projectClass {
   // create project
   createProject = async (req: Request, res: Response) => {
     try {
-      const { error, value } = createProjectSchema.validate(req.body);
+      const { error, value } = projectSchema.validate(req.body);
       if (error) {
         return res.status(400).json({
           error: error.message,
@@ -15,6 +16,7 @@ class projectClass {
       }
       const { projectName, projectDescription } = value;
       const email = req.userEmail;
+
       if (!email) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
@@ -39,6 +41,30 @@ class projectClass {
     }
   };
 
+  //Update project based on project-ID
+  updateProject = async (req: Request, res: Response) => {
+    try {
+      const id = req.params.projectId as string;
+      // Validate projectId
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
+
+      // Validate body
+      const { error, value } = projectSchema.validate(req.body);
+      if (error) {
+        return res.status(400).json({ error: error.message });
+      }
+
+      // Update project
+      const updatedProject = await ProjectServices.updateProject(id, value);
+
+      res.status(200).json(updatedProject);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  };
+
   // Lists all projects
   listProjects = async (req: Request, res: Response) => {
     try {
@@ -51,10 +77,13 @@ class projectClass {
 
   // Gets specific project details with fileCount and jobCount
   viewProject = async (req: Request, res: Response) => {
+    const id = req.params.projectId as string;
     try {
-      const id = req.params.id as string;
-      const projectWithStats = await ProjectServices.getProjectWithStats(id);
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
 
+      const projectWithStats = await ProjectServices.getProjectWithStats(id);
       if (!projectWithStats) {
         return res.status(404).json({ message: 'Project not found' });
       }
@@ -64,12 +93,13 @@ class projectClass {
       res.status(500).json({ error: error.message });
     }
   };
+
   // delete project
   deleteProject = async (req: Request, res: Response) => {
     try {
-      const { id } = req.params as { id: string };
+      const { projectId } = req.params as { projectId: string };
 
-      const result = await ProjectServices.deleteProject(id);
+      const result = await ProjectServices.deleteProject(projectId);
 
       res.status(200).json(result);
     } catch (error: any) {

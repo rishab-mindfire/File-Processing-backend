@@ -1,9 +1,11 @@
 import mongoose from 'mongoose';
+import fs from 'fs';
 import FileModel from '../models/fileModel';
 import JobModel from '../models/jobModel';
 import ProjectModel from '../models/projectModel';
 
 export class ProjectServices {
+  //Create Project
   static async createNewProject(data: {
     projectName: string;
     projectDescription?: string;
@@ -13,7 +15,63 @@ export class ProjectServices {
     return await project.save();
   }
 
-  // Get Project Details
+  // Lists all projects with file/zip counts
+  static async listAllProjects() {
+    return await ProjectModel.aggregate([
+      { $sort: { createdAt: -1 } },
+
+      {
+        $lookup: {
+          from: 'files',
+          localField: '_id',
+          foreignField: 'projectId',
+          as: 'files',
+        },
+      },
+
+      {
+        $lookup: {
+          from: 'zipjobs',
+          localField: '_id',
+          foreignField: 'projectId',
+          as: 'jobs',
+        },
+      },
+
+      {
+        $addFields: {
+          totalFiles: { $size: '$files' },
+          totalZips: {
+            $size: {
+              $filter: {
+                input: '$jobs',
+                as: 'job',
+                cond: { $eq: ['$$job.status', 'COMPLETED'] },
+              },
+            },
+          },
+        },
+      },
+
+      {
+        $project: {
+          files: 0,
+          jobs: 0,
+        },
+      },
+    ]);
+  }
+
+  //update project
+  static updateProject = async (id: string, data: any) => {
+    return await ProjectModel.findByIdAndUpdate(
+      id,
+      { $set: data },
+      { new: true },
+    );
+  };
+
+  // Get Project Details with basic stats
   static async getProjectWithStats(projectId: string) {
     const id = new mongoose.Types.ObjectId(projectId);
 
@@ -21,7 +79,7 @@ export class ProjectServices {
       { $match: { _id: id } },
       {
         $lookup: {
-          from: 'files', // Make sure this matches your Files collection name
+          from: 'files',
           localField: '_id',
           foreignField: 'projectId',
           as: 'files',
@@ -29,7 +87,7 @@ export class ProjectServices {
       },
       {
         $lookup: {
-          from: 'jobs', // Make sure this matches your Jobs collection name
+          from: 'zipjobs',
           localField: '_id',
           foreignField: 'projectId',
           as: 'jobs',
@@ -49,99 +107,42 @@ export class ProjectServices {
     return stats[0];
   }
 
-  // Lists all projects
-  static async listAllProjects() {
-    return await ProjectModel.aggregate([
-      {
-        $sort: { createdAt: -1 },
-      },
-
-      // Join files
-      {
-        $lookup: {
-          from: 'filemodels',
-          localField: '_id',
-          foreignField: 'projectId',
-          as: 'files',
-        },
-      },
-
-      // Join jobs (ZIP)
-      {
-        $lookup: {
-          from: 'jobmodels',
-          localField: '_id',
-          foreignField: 'projectId',
-          as: 'jobs',
-        },
-      },
-
-      // Add counts
-      {
-        $addFields: {
-          totalFiles: { $size: '$files' },
-          totalZips: {
-            $size: {
-              $filter: {
-                input: '$jobs',
-                as: 'job',
-                cond: { $eq: ['$$job.type', 'ZIP_COMPRESSION'] },
-              },
-            },
-          },
-        },
-      },
-
-      // Remove heavy arrays
-      {
-        $project: {
-          files: 0,
-          jobs: 0,
-        },
-      },
-    ]);
-  }
-
-  // Deletes a project and prepares for cascade delete
+  // delete project with clean-up
   static async deleteProject(projectId: string) {
-    //check project id exist
-    const exists = await ProjectModel.exists({ _id: projectId });
-    // Validate
-    if (!mongoose.Types.ObjectId.isValid(projectId) || !exists) {
+    if (!mongoose.Types.ObjectId.isValid(projectId)) {
       throw { status: 400, message: 'Invalid projectId' };
     }
 
-    const db = mongoose.connection.db;
-    if (!db) {
-      throw { status: 500, message: 'DB not connected' };
+    const project = await ProjectModel.findById(projectId);
+    if (!project) {
+      throw { status: 404, message: 'Project not found' };
     }
 
-    const bucket = new mongoose.mongo.GridFSBucket(db);
-
-    //  Get files
+    // delete all file records
     const files = await FileModel.find({ projectId });
 
-    //  Delete from GridFS (parallel for speed)
+    // Delete actual physical files from Disk
     await Promise.all(
       files.map(async (file) => {
         try {
-          if (file.fileId) {
-            await bucket.delete(new mongoose.Types.ObjectId(file.fileId));
+          if (file.storagePath && fs.existsSync(file.storagePath)) {
+            await fs.promises.unlink(file.storagePath);
           }
         } catch (err) {
-          console.error('GridFS delete error:', err);
-          // don't throw → continue deleting others
+          console.error(`Failed to delete disk file: ${file.storagePath}`, err);
         }
       }),
     );
 
-    // Delete metadata
+    // Delete metadata from Database (Cascade)
     await Promise.all([
       FileModel.deleteMany({ projectId }),
       JobModel.deleteMany({ projectId }),
       ProjectModel.findByIdAndDelete(projectId),
     ]);
 
-    return { message: 'Project and all files deleted successfully' };
+    return {
+      message: 'Project and all associated files and jobs deleted successfully',
+    };
   }
 }

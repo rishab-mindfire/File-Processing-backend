@@ -57,6 +57,7 @@ export class ProjectServices {
         $project: {
           files: 0,
           jobs: 0,
+          owner: 0,
         },
       },
     ]);

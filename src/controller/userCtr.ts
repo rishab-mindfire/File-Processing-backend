@@ -42,15 +42,15 @@ class userClass {
     if (error) {
       return res.status(400).json({
         message: 'Validation failed',
-        details: error.details[0].message,
+        details: error.details[0].message.replace(/"/g, ''),
       });
     }
 
-    const { userEmail, password } = value;
+    const { userEmail, userPassword } = value;
     try {
       const checkPassword = await userServices.checkSigninPassword(
         userEmail,
-        password,
+        userPassword,
       );
       if (!checkPassword) {
         return res.status(401).json({ message: 'Invalid credentials' });

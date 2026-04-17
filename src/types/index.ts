@@ -5,14 +5,14 @@ export interface UserType {
   userID: string;
   userName: string;
   userEmail: string;
-  password: string;
+  userPassword: string;
   role: string;
 }
 
 // User Login
 export interface IUserLogin {
   userEmail: string;
-  password: string;
+  userPassword: string;
 }
 
 // Project

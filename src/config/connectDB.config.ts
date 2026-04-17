@@ -12,7 +12,7 @@ const options = {
 const connectDB = async () => {
   const connectionString = process.env.DB_CONNECTION_STRING;
   console.log(`Connecting to ... ${connectionString}`);
-  if (connectionString) {
+  if (connectionString && process.env.NODE_ENV === 'production') {
     await mongoose
       .connect(connectionString, options)
       .then((res) => {

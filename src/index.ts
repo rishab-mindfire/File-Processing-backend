@@ -31,8 +31,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // routes
 app.use('/user', userRouter);
-// app.use('/projects', authRoleBased('admin'), projectRoute);
-app.use('/projects', projectRoute);
+app.use('/projects', authRoleBased('admin'), projectRoute);
 
 const startServer = async () => {
   try {
@@ -52,3 +51,4 @@ const env = process.env.NODE_ENV;
 app.listen(port, () => {
   console.log(`${env} : App is running on ${port}`);
 });
+export default app;

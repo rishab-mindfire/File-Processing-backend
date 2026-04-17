@@ -8,7 +8,9 @@ export const UserRegistrationValidation = Joi.object({
 });
 
 export const UserLoginValidation = Joi.object({
-  userEmail: Joi.string().email().required(),
+  userEmail: Joi.string().email().required().messages({
+    'string.email': 'userEmail must be a valid email',
+  }),
   password: Joi.string().min(5).required(),
 });
 

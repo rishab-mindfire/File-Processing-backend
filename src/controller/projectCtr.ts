@@ -10,34 +10,30 @@ class projectClass {
     try {
       const { error, value } = projectSchema.validate(req.body);
       if (error) {
-        return res.status(400).json({
-          error: error.message,
-        });
+        return res.status(400).json({ error: error.message });
       }
-      const { projectName, projectDescription } = value;
-      const email = req.userEmail;
 
+      const { projectName, projectDescription } = value;
+
+      const email = req.userEmail;
       if (!email) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
-      const user = await userServices.checkEmail(email as string);
+
+      const user = await userServices.checkEmail(email);
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
-      if (!projectName) {
-        return res.status(404).json({ error: 'Project name required' });
-      }
 
-      // Create project with the user id found in token
       const project = await ProjectServices.createNewProject({
-        projectName: projectName,
-        projectDescription: projectDescription,
+        projectName,
+        projectDescription,
         owner: (user as any)._id,
       });
 
-      res.status(201).json(project);
+      return res.status(201).json(project);
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      return res.status(500).json({ error: error.message });
     }
   };
 

@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { userServices } from '../services/users';
 import { generateToken } from '../services/authGeneral';
 import {
-  UserChangePassword,
   UserLoginValidation,
   UserRegistrationValidation,
 } from '../Validation/userRegistration';
@@ -19,7 +18,7 @@ class userClass {
       });
     }
 
-    //validating the registarion request
+    // validating the registarion request
     const { error, value } = UserRegistrationValidation.validate(data);
     if (error) return res.send(error.message);
     //check for unique email
@@ -69,7 +68,7 @@ class userClass {
       return res.status(500).json({ message: 'Internal Server Error' });
     }
   };
-  //cahnge pass
+  //cahange pass
   userChangePassword = async (req: Request, res: Response) => {
     const data = req.body;
     const user = await UsersModel.findOne({ userEmail: req.body.userEmail });

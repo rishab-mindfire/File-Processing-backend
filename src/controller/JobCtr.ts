@@ -91,7 +91,7 @@ export class JobCtr {
       }
 
       // Fetch Job by job-id
-      const job = await JobModel.findById(jobId);
+      const job = await JobModel.findById(jobId).select('status progress size');
 
       // Handle Not Found
       if (!job) {
@@ -121,6 +121,22 @@ export class JobCtr {
 
       res.status(error.status || 500).json({
         error: error.message || 'Internal Server Error',
+      });
+    }
+  };
+
+  // Delete Zip
+
+  static deleteZipJob = async (req: any, res: any) => {
+    try {
+      const { jobId } = req.params;
+
+      const result = await JobService.deleteZipJob(jobId);
+
+      return res.status(200).json(result);
+    } catch (err: any) {
+      return res.status(err.status || 500).json({
+        error: err.message || 'Internal server error',
       });
     }
   };

@@ -41,6 +41,7 @@ export interface IFile {
 export interface IJob {
   projectId: mongoose.Types.ObjectId;
   type: 'ZIP_COMPRESSION';
+  size: number;
   status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
   progress: number;
   outputFileId?: mongoose.Types.ObjectId; // Points to the _id in File collection

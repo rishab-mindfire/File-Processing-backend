@@ -31,8 +31,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // routes
 app.use('/user', userRouter);
-//app.use('/projects', authRoleBased('admin'), projectRoute);
-app.use('/projects', projectRoute);
+app.use('/projects', authRoleBased('admin'), projectRoute);
 
 const startServer = async () => {
   try {

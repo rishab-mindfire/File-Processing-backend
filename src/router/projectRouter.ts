@@ -28,3 +28,4 @@ projectRoute.post('/:projectId/jobs/zip', JobCtr.createZipJob);
 projectRoute.get('/:projectId/zip', JobCtr.getZipsDetailsList);
 projectRoute.get('/:projectId/jobs/:jobId', JobCtr.getJobStatus);
 projectRoute.get('/:projectId/jobs/:jobId/download', JobCtr.downloadZip);
+projectRoute.delete('/:projectId/jobs/:jobId', JobCtr.deleteZipJob);

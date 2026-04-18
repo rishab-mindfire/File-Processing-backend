@@ -148,7 +148,6 @@ export class JobService {
       throw { status: 400, message: 'Invalid Project ID' };
     }
 
-    // check for completed job
     const completedJobs = await JobModel.find({
       projectId: new mongoose.Types.ObjectId(projectId),
       type: 'ZIP_COMPRESSION',
@@ -161,7 +160,6 @@ export class JobService {
       .sort({ completedAt: -1 })
       .lean();
 
-    //filter based on outputFileId
     return completedJobs
       .filter((job) => job.outputFileId)
       .map((job: any) => ({
@@ -169,6 +167,7 @@ export class JobService {
         fileName: job.outputFileId.name,
         size: job.outputFileId.size,
         completedAt: job.completedAt,
+        //downloadUrl: `/projects/${projectId}/jobs/${job._id}/download`,
       }));
   }
 }

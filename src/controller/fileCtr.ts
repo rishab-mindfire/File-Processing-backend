@@ -21,6 +21,7 @@ export class fileCtr {
       const safeFiles = upload.map((file) => ({
         name: file.name,
         size: file.size,
+        _id: file._id,
       }));
 
       res.status(200).json({

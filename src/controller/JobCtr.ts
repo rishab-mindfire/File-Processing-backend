@@ -58,6 +58,7 @@ export class JobCtr {
       res.status(500).json({ error: error.message });
     }
   };
+
   // get all ziped project based on project id
   static getZipsDetailsList = async (req: Request, res: Response) => {
     try {
@@ -72,6 +73,7 @@ export class JobCtr {
       res.status(error.status || 500).json({ message: error.message });
     }
   };
+
   // check job status of zip file based on job-id form db
   static getJobStatus = async (req: Request, res: Response) => {
     try {

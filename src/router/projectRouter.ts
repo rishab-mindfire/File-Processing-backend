@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { ProjectCtr } from '../controller/project.controller';
 // import { JobCtr } from '../controller/Job.controller';
 // import multer from 'multer';
-import { fileCtr } from '../controller/file.controller';
+//import { fileCtr } from '../controller/file.controller';
 
 // Configure Multer for file storage
 // const storage = multer.memoryStorage();
@@ -19,9 +19,9 @@ projectRoute.delete('/:projectId', ProjectCtr.deleteProject);
 
 // File Operations
 //projectRoute.post('/:projectId/files', upload.any(), fileCtr.uploadFiles);
-projectRoute.get('/:projectId/files', fileCtr.getFileDetailsList);
+//projectRoute.get('/:projectId/files', fileCtr.getFileDetailsList);
 //projectRoute.get('/:projectId/files/:fileId/download', fileCtr.downloadFile);
-projectRoute.delete('/:projectId/files/:fileId', fileCtr.deleteFile);
+//projectRoute.delete('/:projectId/files/:fileId', fileCtr.deleteFile);
 
 // Jobs creation ZIP of files
 // projectRoute.post('/:projectId/jobs/zip', JobCtr.createZipJob);

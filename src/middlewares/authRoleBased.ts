@@ -1,9 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { verifyEmplyeeRole } from '../services/authRole.service';
-import { verifyTokenAndGetUser } from '../services/authGeneral.service';
 
-//default request will be found email type declaration
 declare global {
   namespace Express {
     interface Request {
@@ -12,39 +10,58 @@ declare global {
   }
 }
 
-function authRoleBased(...allowedRoles: any) {
-  const secret = process.env.JWT_SECRETE;
-  // check token in each incomming request
+function authRoleBased(...allowedRoles: string[]) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    var userToken = req?.headers['authorization']?.toString();
-    const token = userToken && userToken.split(' ')[1];
-
-    if (!token) {
-      res.status(404).send('token not found !');
-      return;
-    }
-    const user = verifyTokenAndGetUser(token);
-    if (!user) {
-      res.status(405).send('Invalid token, please login!');
-      return;
-    }
     try {
-      if (secret && token !== undefined) {
-        const userDetails = jwt.verify(token, secret);
-        const userEmail = await JSON.parse(JSON.stringify(userDetails))
-          .userEmail;
-        const userRole = await verifyEmplyeeRole(userEmail);
-        if (!allowedRoles.includes(userRole))
-          return res.status(404).send('User not authorized !');
-        else {
-          req.userEmail = userEmail;
-          next();
-        }
+      if (req.method === 'OPTIONS') {
+        return next();
       }
+
+      const authHeader = req.headers.authorization;
+
+      if (!authHeader) {
+        return res.status(401).json({ message: 'Token not provided' });
+      }
+
+      const token = authHeader.split(' ')[1];
+
+      if (!token) {
+        return res.status(401).json({ message: 'Invalid token format' });
+      }
+
+      const secret = 'DLCEOeL8Xf5TMDBaWnFeVAL86GoAEwdRjERMdO84Dg5';
+
+      if (!secret) {
+        throw new Error('JWT_SECRET is missing');
+      }
+
+      let decoded: any;
+      try {
+        decoded = jwt.verify(token, secret);
+      } catch {
+        return res.status(401).json({ message: 'Invalid token' });
+      }
+
+      const userEmail = decoded.userEmail;
+
+      if (!userEmail) {
+        return res.status(401).json({ message: 'Invalid token payload' });
+      }
+
+      const userRole = await verifyEmplyeeRole(userEmail);
+
+      if (!userRole || !allowedRoles.includes(userRole)) {
+        return res.status(403).json({ message: 'User not authorized' });
+      }
+
+      req.userEmail = userEmail;
+
+      next();
     } catch (error) {
-      next(error);
-      return res.status(404).send(`somthing went wrong !, ${error}`);
+      console.error('Auth error:', error);
+      return res.status(500).json({ message: 'Authentication failed' });
     }
   };
 }
+
 export default authRoleBased;

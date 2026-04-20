@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import { verifyEmplyeeRole } from '../services/authRole.service';
 
 declare global {
   namespace Express {
@@ -12,24 +13,53 @@ declare global {
 function authRoleBased(...allowedRoles: string[]) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      console.log('AUTH HIT');
+      if (req.method === 'OPTIONS') {
+        return next();
+      }
 
       const authHeader = req.headers.authorization;
-      if (!authHeader) return res.status(401).send('No token');
+
+      if (!authHeader) {
+        return res.status(401).json({ message: 'Token not provided' });
+      }
 
       const token = authHeader.split(' ')[1];
-      if (!token) return res.status(401).send('Bad token');
 
-      const decoded: any = jwt.verify(token, 'hardcoded_secret');
+      if (!token) {
+        return res.status(401).json({ message: 'Invalid token format' });
+      }
 
-      console.log('DECODED:', decoded);
+      const secret = process.env.JWT_SECRET;
 
-      req.userEmail = decoded.userEmail;
+      if (!secret) {
+        throw new Error('JWT_SECRET is missing');
+      }
+
+      let decoded: any;
+      try {
+        decoded = jwt.verify(token, secret);
+      } catch {
+        return res.status(401).json({ message: 'Invalid token' });
+      }
+
+      const userEmail = decoded.userEmail;
+
+      if (!userEmail) {
+        return res.status(401).json({ message: 'Invalid token payload' });
+      }
+
+      const userRole = await verifyEmplyeeRole(userEmail);
+
+      if (!userRole || !allowedRoles.includes(userRole)) {
+        return res.status(403).json({ message: 'User not authorized' });
+      }
+
+      req.userEmail = userEmail;
 
       next();
-    } catch (err) {
-      console.error('AUTH ERROR:', err);
-      return res.status(500).send('Auth failed');
+    } catch (error) {
+      console.error('Auth error:', error);
+      return res.status(500).json({ message: 'Authentication failed' });
     }
   };
 }

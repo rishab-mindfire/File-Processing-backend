@@ -5,14 +5,8 @@ import multer from 'multer';
 import { fileCtr } from '../controller/file.controller';
 
 // Configure Multer for file storage
-const storage = multer.memoryStorage();
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 1 * 1024 * 1024, // 1MB max
-    files: 1,
-  },
-});
+// const storage = multer.memoryStorage();
+// const upload = multer({ storage });
 
 export const projectRoute = Router();
 
@@ -24,27 +18,7 @@ projectRoute.put('/:projectId', ProjectCtr.updateProject);
 projectRoute.delete('/:projectId', ProjectCtr.deleteProject);
 
 // File Operations
-projectRoute.post(
-  '/:projectId/files',
-  (req, res, next) => {
-    upload.single('file')(req, res, (err: any) => {
-      if (err) {
-        console.error('Upload error:', err);
-        return res.status(400).json({ message: err.message });
-      }
-      next();
-    });
-  },
-  (req, res) => {
-    if (!req.file) {
-      return res.status(400).send('No file');
-    }
-
-    console.log('File received:', req.file.originalname);
-
-    res.send('Uploaded (temporary)');
-  }
-);
+//projectRoute.post('/:projectId/files', upload.any(), fileCtr.uploadFiles);
 projectRoute.get('/:projectId/files', fileCtr.getFileDetailsList);
 projectRoute.get('/:projectId/files/:fileId/download', fileCtr.downloadFile);
 projectRoute.delete('/:projectId/files/:fileId', fileCtr.deleteFile);

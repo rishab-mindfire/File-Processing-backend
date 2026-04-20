@@ -6,16 +6,14 @@ import connectDB from './config/connectDB.config';
 import cors from 'cors';
 import { projectRoute } from './router/projectRouter';
 
-const envFile =
-  process.env.NODE_ENV === 'production' ? '.env.production' : '.env.dev';
+const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.dev';
 
 dotenv.config({ path: envFile });
 
 const app = express();
 
 // CORS
-const frontend_url: string =
-  process.env.FRONTEND_URL || 'http://localhost:3001';
+const frontend_url: string = process.env.FRONTEND_URL || 'http://localhost:3001';
 
 const corsOptions = {
   origin: [frontend_url],
@@ -36,9 +34,7 @@ app.use('/user', userRouter);
 app.use('/projects', authRoleBased('admin'), projectRoute);
 
 // Connect DB
-connectDB().catch((err) => {
-  console.error('DB connection failed:', err);
-});
+connectDB().catch();
 
 // Main Route
 app.get('/', (req, res) => {

@@ -18,7 +18,7 @@ export const fileSchema = Joi.object({
       'video/webm',
       // .xls
       'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     )
     .required(),
   size: Joi.number()

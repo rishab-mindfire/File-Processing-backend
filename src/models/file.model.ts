@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { IFile } from '../types';
+import { IFile } from '../types/index.js';
 
 //
 const fileSchema = new Schema<IFile>(

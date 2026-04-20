@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { IProject } from '../types';
+import { IProject } from '../types/index.js';
 
 const projectSchema = new Schema<IProject>(
   {

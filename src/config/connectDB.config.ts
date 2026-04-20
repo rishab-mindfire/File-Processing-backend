@@ -1,32 +1,28 @@
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
 
-dotenv.config();
-
-const options = {
-  autoIndex: true,
-  socketTimeoutMS: 45000,
-};
-
-//db connection using connection string
 const connectDB = async () => {
   const connectionString = process.env.DB_CONNECTION_STRING;
-  console.log(`Connecting to ... ${connectionString}`);
-  if (connectionString && process.env.NODE_ENV === 'dev') {
-    await mongoose
-      .connect(connectionString, options)
-      .then((res) => {
-        if (res) {
-          console.log(`Database connected successfully ! `);
-        }
-      })
-      .catch((err) => {
-        console.log(`Error in DB connection : ${connectionString}`, err);
-      });
 
-    return mongoose;
-  } else {
-    console.log(`Connection string is undefind ! ${connectionString}`);
+  if (!connectionString) {
+    throw new Error('DB_CONNECTION_STRING is missing');
+  }
+
+  // Prevent multiple connections in serverless
+  if (mongoose.connection.readyState === 1) {
+    return;
+  }
+
+  try {
+    await mongoose.connect(connectionString, {
+      autoIndex: true,
+      socketTimeoutMS: 45000,
+    });
+
+    console.log('Database connected successfully');
+  } catch (err) {
+    console.error('DB connection error:', err);
+    throw err;
   }
 };
+
 export default connectDB;

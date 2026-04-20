@@ -28,12 +28,12 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// app.use(express.json());
+// app.use(express.urlencoded({ extended: true }));
 
-// Routes
-app.use('/user', userRouter);
-app.use('/projects', authRoleBased('admin'), projectRoute);
+// // Routes
+// app.use('/user', userRouter);
+// app.use('/projects', authRoleBased('admin'), projectRoute);
 
 // Connect DB
 connectDB().catch((err) => {

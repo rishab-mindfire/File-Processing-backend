@@ -33,7 +33,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/user', userRouter);
-app.use('/projects', authRoleBased('admin'));
+app.use('/projects', authRoleBased('admin'), projectRoute);
 
 // Connect DB
 connectDB().catch((err) => {

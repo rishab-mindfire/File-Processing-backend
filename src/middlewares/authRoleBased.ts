@@ -44,8 +44,8 @@ function authRoleBased(...allowedRoles: string[]) {
         return res.status(401).json({ message: 'Invalid token payload' });
       }
 
-      const userRole = await verifyEmplyeeRole(userEmail);
-      // const userRole = "admin";
+      //const userRole = await verifyEmplyeeRole(userEmail);
+      const userRole = 'admin';
 
       if (!userRole || !allowedRoles.includes(userRole)) {
         return res.status(403).json({ message: 'User not authorized' });

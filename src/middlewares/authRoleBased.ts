@@ -29,7 +29,7 @@ function authRoleBased(...allowedRoles: string[]) {
         return res.status(401).json({ message: 'Invalid token format' });
       }
 
-      const secret = process.env.JWT_SECRET;
+      const secret = 'DLCEOeL8Xf5TMDBaWnFeVAL86GoAEwdRjERMdO84Dg5';
 
       if (!secret) {
         throw new Error('JWT_SECRET is missing');

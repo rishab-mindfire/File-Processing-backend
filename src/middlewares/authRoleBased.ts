@@ -18,6 +18,7 @@ function authRoleBased(...allowedRoles: any) {
   return async (req: Request, res: Response, next: NextFunction) => {
     var userToken = req?.headers['authorization']?.toString();
     const token = userToken && userToken.split(' ')[1];
+
     if (!token) {
       res.status(404).send('token not found !');
       return;

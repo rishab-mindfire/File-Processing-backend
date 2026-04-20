@@ -17,11 +17,16 @@ export class fileCtr {
       }
 
       const files = req.files as Express.Multer.File[];
-      const results = await FileService.uploadFiles(projectId, files);
+      const upload = await FileService.uploadFiles(projectId, files);
+      const safeFiles = upload.map((file) => ({
+        name: file.name,
+        size: file.size,
+        _id: file._id,
+      }));
 
-      res.status(201).json({
+      res.status(200).json({
         message: 'Files stored successfully',
-        data: results,
+        data: safeFiles,
       });
     } catch (error: any) {
       console.error('Upload error:', error);

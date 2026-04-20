@@ -73,6 +73,7 @@ export class JobService {
             outputFileId: newFile._id,
             completedAt: new Date(),
             progress: 100,
+            size: msg.size,
           });
         } catch (err: any) {
           console.error('Error saving ZIP metadata:', err);
@@ -148,7 +149,6 @@ export class JobService {
       throw { status: 400, message: 'Invalid Project ID' };
     }
 
-    // check for completed job
     const completedJobs = await JobModel.find({
       projectId: new mongoose.Types.ObjectId(projectId),
       type: 'ZIP_COMPRESSION',
@@ -161,7 +161,6 @@ export class JobService {
       .sort({ completedAt: -1 })
       .lean();
 
-    //filter based on outputFileId
     return completedJobs
       .filter((job) => job.outputFileId)
       .map((job: any) => ({
@@ -169,6 +168,36 @@ export class JobService {
         fileName: job.outputFileId.name,
         size: job.outputFileId.size,
         completedAt: job.completedAt,
+        //downloadUrl: `/projects/${projectId}/jobs/${job._id}/download`,
       }));
+  }
+
+  // Delete Zip file
+  static async deleteZipJob(jobId: string) {
+    if (!mongoose.Types.ObjectId.isValid(jobId)) {
+      throw { status: 400, message: 'Invalid jobId' };
+    }
+
+    const job = await JobModel.findById(jobId);
+
+    if (!job) {
+      throw { status: 404, message: 'Job not found' };
+    }
+
+    // Delete physical file if exists
+    if (job.outputFileId) {
+      const fileDoc = await FileModel.findById(job.outputFileId);
+
+      if (fileDoc?.storagePath && fs.existsSync(fileDoc.storagePath)) {
+        fs.unlinkSync(fileDoc.storagePath);
+      }
+
+      await FileModel.findByIdAndDelete(job.outputFileId);
+    }
+
+    //  Delete job itself
+    await JobModel.findByIdAndDelete(jobId);
+
+    return { success: true, message: 'ZIP job deleted successfully' };
   }
 }

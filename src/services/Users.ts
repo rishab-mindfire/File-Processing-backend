@@ -6,10 +6,9 @@ import { generateCustomId } from '../utils/randomId';
 class Users {
   async createUser(data: UserType) {
     try {
-      const newPass = await bcrypt.hash(data.password.toString(), 10);
-      const userData = { ...data, password: newPass };
+      const newPass = await bcrypt.hash(data.userPassword.toString(), 10);
+      const userData = { ...data, userPassword: newPass };
       userData.userID = generateCustomId();
-
       await UsersModel.create(userData);
     } catch (error) {
       console.log(error);
@@ -30,7 +29,10 @@ class Users {
     });
     if (user !== null) {
       //check hased password
-      const match = await bcrypt.compare(password, user.password.toString());
+      const match = await bcrypt.compare(
+        password,
+        user.userPassword.toString(),
+      );
       if (match) return true;
       else return false;
     }

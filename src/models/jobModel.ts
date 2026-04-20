@@ -13,6 +13,7 @@ const jobSchema = new Schema<IJob>(
       enum: ['ZIP_COMPRESSION'],
       default: 'ZIP_COMPRESSION',
     },
+    size: { type: Number, default: 0 },
     status: {
       type: String,
       enum: ['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED'],

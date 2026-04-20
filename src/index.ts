@@ -18,7 +18,7 @@ const frontend_url: string =
   process.env.FRONTEND_URL || 'http://localhost:3001';
 
 const corsOptions = {
-  origin: [frontend_url, 'http://localhost:3002'],
+  origin: [frontend_url],
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
   optionsSuccessStatus: 200,

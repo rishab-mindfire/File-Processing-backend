@@ -1,5 +1,5 @@
-import mongoose, { Schema, Document } from 'mongoose';
-import { IJob } from '../types';
+import mongoose, { Schema } from 'mongoose';
+import { IJob } from '../types/index.js';
 
 const jobSchema = new Schema<IJob>(
   {

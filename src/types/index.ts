@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 
 // User Registration
 export interface UserType {
@@ -44,8 +44,39 @@ export interface IJob {
   size: number;
   status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
   progress: number;
-  outputFileId?: mongoose.Types.ObjectId; // Points to the _id in File collection
+  outputFileId?: mongoose.Types.ObjectId;
   error?: string;
   startedAt?: Date;
   completedAt?: Date;
+}
+//
+
+export type FilePopulated = {
+  name: string;
+  size: number;
+};
+
+export type CompletedJobRaw = {
+  _id: Types.ObjectId;
+  completedAt?: Date;
+  outputFileId?: Types.ObjectId | FilePopulated;
+};
+//
+export interface SelectedFile {
+  name: string;
+  storagePath: string;
+}
+
+export type WorkerMessage =
+  | { type: 'DONE'; name: string; outputPath: string; size: number }
+  | { type: 'ERROR'; message: string };
+
+export type FileDocType = {
+  storagePath: string;
+  name: string;
+};
+// error parse
+export interface ParsedError {
+  status: number;
+  message: string;
 }

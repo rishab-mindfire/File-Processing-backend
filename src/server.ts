@@ -1,18 +1,18 @@
-import app from './index';
+import app from './index.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 const port = process.env.PORT || 3000;
 
-const startServer = async () => {
-  try {
-    app.listen(port, () => {
-      console.log(`Local server running on http://localhost:${port}`);
-    });
-  } catch (err) {
-    console.error('Failed to start server', err);
-  }
+const startServer = () => {
+  const server = app.listen(port);
+
+  server.on('error', (err: Error) => {
+    if (err) {
+      process.exit(1);
+    }
+  });
 };
 
 startServer();

@@ -1,44 +1,57 @@
 import { Worker } from 'worker_threads';
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import path from 'path';
 import fs from 'fs';
 import { Response } from 'express';
-import FileModel from '../models/file.model';
-import JobModel from '../models/job.model';
-import ProjectModel from '../models/project.model';
+import { fileURLToPath } from 'url';
+import FileModel from '../models/file.model.js';
+import JobModel from '../models/job.model.js';
+import ProjectModel from '../models/project.model.js';
+import {
+  CompletedJobRaw,
+  FileDocType,
+  FilePopulated,
+  SelectedFile,
+  WorkerMessage,
+} from '../types/index.js';
+
+/* ================= PATH SETUP ================= */
 
 const ZIPS_DIR = path.resolve(process.env.UPLOAD_PATH_ZIPS || './uploads/zips');
+
 const ensureDirectoryExists = (dirPath: string) => {
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
-    console.log(`[Storage] ZIP directory created at: ${dirPath}`);
   }
 };
 
-// create folder for ZIPed files
 ensureDirectoryExists(ZIPS_DIR);
 
+/* ================= SERVICE ================= */
+
 export class JobService {
-  // create Zip of files based on array of files id
+  /* ========= CREATE ZIP ========= */
   static async createZip({
     job,
     projectId,
     selectedFiles,
   }: {
-    job: any;
+    job: { _id: Types.ObjectId };
     projectId: string;
-    selectedFiles: any[];
+    selectedFiles: SelectedFile[];
   }) {
-    // check existence of project
     const project = await ProjectModel.findById(projectId);
     if (!project) {
-      throw { status: 400, message: 'Project not found' };
+      throw new Error('Project not found');
     }
 
-    // Resolve path
-    const workerPath = path.resolve(__dirname, '../workers/zip-Worker.js');
+    // ESM-safe __dirname
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
 
-    //check for folder exist or not else it will  create
+    // IMPORTANT: ensure correct runtime path (dist vs src)
+    const workerPath = path.resolve(__dirname, '../workers/zip-worker.cjs');
+
     ensureDirectoryExists(ZIPS_DIR);
 
     const worker = new Worker(workerPath, {
@@ -53,11 +66,10 @@ export class JobService {
       },
     });
 
-    // Handle messages from Worker
-    worker.on('message', async (msg) => {
+    /* ===== WORKER MESSAGE ===== */
+    worker.on('message', async (msg: WorkerMessage) => {
       if (msg.type === 'DONE') {
         try {
-          // Create a metadata for ZIP file
           const newFile = await FileModel.create({
             projectId,
             name: msg.name,
@@ -67,7 +79,6 @@ export class JobService {
             isGenerated: true,
           });
 
-          // Mark the background job as completed once done
           await JobModel.findByIdAndUpdate(job._id, {
             status: 'COMPLETED',
             outputFileId: newFile._id,
@@ -75,8 +86,13 @@ export class JobService {
             progress: 100,
             size: msg.size,
           });
-        } catch (err: any) {
-          console.error('Error saving ZIP metadata:', err);
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : 'Failed to save ZIP metadata';
+
+          await JobModel.findByIdAndUpdate(job._id, {
+            status: 'FAILED',
+            error: message,
+          });
         }
       }
 
@@ -88,54 +104,45 @@ export class JobService {
       }
     });
 
-    worker.on('error', async (err) => {
-      console.error('Worker thread crash:', err);
+    /* ===== WORKER ERROR ===== */
+    worker.on('error', async (err: Error) => {
+      const message = err.message || 'Worker crashed';
+
       await JobModel.findByIdAndUpdate(job._id, {
         status: 'FAILED',
-        error: err.message,
+        error: message,
       });
     });
   }
 
-  // download zip file
+  /* ========= DOWNLOAD ZIP ========= */
   static async downloadZip(jobId: string, res: Response) {
     if (!mongoose.Types.ObjectId.isValid(jobId)) {
-      throw { status: 400, message: 'Invalid jobId' };
+      throw new Error('Invalid jobId');
     }
 
-    // Populate the outputFileId to get the storagePath from FileModel
     const job = await JobModel.findById(jobId).populate('outputFileId');
 
     if (!job) {
-      throw { status: 404, message: 'Compression job not found' };
+      throw new Error('Compression job not found');
     }
 
     if (job.status !== 'COMPLETED' || !job.outputFileId) {
-      throw {
-        status: 400,
-        message: 'ZIP file is not ready or failed to generate',
-      };
+      throw new Error('ZIP file is not ready or failed to generate');
     }
-
-    const fileDoc = job.outputFileId as any;
+    const fileDoc = job.outputFileId as unknown as FileDocType;
 
     if (!fs.existsSync(fileDoc.storagePath)) {
-      throw { status: 404, message: 'Physical ZIP file not found on server' };
+      throw new Error('Physical ZIP file not found on server');
     }
 
-    // Set download headers
     res.setHeader('Content-Type', 'application/zip');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="${fileDoc.name}"`
-    );
+    res.setHeader('Content-Disposition', `attachment; filename="${fileDoc.name}"`);
 
-    // Stream directly from disk to client
     const fileStream = fs.createReadStream(fileDoc.storagePath);
 
-    fileStream.on('error', (err) => {
-      console.error('File ReadStream error:', err);
-      if (!res.headersSent) {
+    fileStream.on('error', (err: Error) => {
+      if (err && !res.headersSent) {
         res.status(500).json({ error: 'Failed to read ZIP from storage' });
       }
     });
@@ -143,10 +150,10 @@ export class JobService {
     fileStream.pipe(res);
   }
 
-  // list of ziped files
+  /* ========= LIST ZIPS ========= */
   static async listZips(projectId: string) {
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
-      throw { status: 400, message: 'Invalid Project ID' };
+      throw new Error('Invalid Project ID');
     }
 
     const completedJobs = await JobModel.find({
@@ -160,31 +167,35 @@ export class JobService {
       })
       .sort({ completedAt: -1 })
       .lean();
-
     return completedJobs
-      .filter((job) => job.outputFileId)
-      .map((job: any) => ({
-        jobId: job._id,
-        fileName: job.outputFileId.name,
-        size: job.outputFileId.size,
-        completedAt: job.completedAt,
-        //downloadUrl: `/projects/${projectId}/jobs/${job._id}/download`,
-      }));
+      .filter(
+        (job) =>
+          job.outputFileId && typeof job.outputFileId === 'object' && 'name' in job.outputFileId,
+      )
+      .map((job: CompletedJobRaw) => {
+        const file = job.outputFileId as FilePopulated;
+
+        return {
+          jobId: job._id,
+          fileName: file.name,
+          size: file.size,
+          completedAt: job.completedAt,
+        };
+      });
   }
 
-  // Delete Zip file
+  /* ========= DELETE ZIP ========= */
   static async deleteZipJob(jobId: string) {
     if (!mongoose.Types.ObjectId.isValid(jobId)) {
-      throw { status: 400, message: 'Invalid jobId' };
+      throw new Error('Invalid jobId');
     }
 
     const job = await JobModel.findById(jobId);
 
     if (!job) {
-      throw { status: 404, message: 'Job not found' };
+      throw new Error('Job not found');
     }
 
-    // Delete physical file if exists
     if (job.outputFileId) {
       const fileDoc = await FileModel.findById(job.outputFileId);
 
@@ -195,7 +206,6 @@ export class JobService {
       await FileModel.findByIdAndDelete(job.outputFileId);
     }
 
-    //  Delete job itself
     await JobModel.findByIdAndDelete(jobId);
 
     return { success: true, message: 'ZIP job deleted successfully' };

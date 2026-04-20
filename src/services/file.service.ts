@@ -1,35 +1,34 @@
 import fs from 'fs';
 import path from 'path';
 import { Response } from 'express';
-import FileModel from '../models/file.model';
-import { fileSchema } from '../Validation/fileValidation';
+import FileModel from '../models/file.model.js';
+import { fileSchema } from '../Validation/fileValidation.js';
 
-const FILES_DIR = path.resolve(
-  process.env.UPLOAD_PATH_FILES || './uploads/files'
-);
+// Resolve upload directory
+const FILES_DIR = path.resolve(process.env.UPLOAD_PATH_FILES || './uploads/files');
 
+// Ensure directory exists before using it
 const ensureDirectoryExists = (dirPath: string) => {
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
-    console.log(`[Storage] Created directory: ${dirPath}`);
   }
 };
 
-// create folder upload/files
+// Create base upload directory at startup
 ensureDirectoryExists(FILES_DIR);
 
 export class FileService {
   // upload files
   static async uploadFiles(projectId: string, files: Express.Multer.File[]) {
-    // check file
+    // Validate files array
     if (!files || files.length === 0) {
       throw { status: 400, message: 'No files uploaded' };
     }
 
-    // check directory created or not
+    // Ensure storage directory exists
     ensureDirectoryExists(FILES_DIR);
 
-    // Validate files before upload
+    // Validate each file using schema
     for (const file of files) {
       const { error } = fileSchema.validate({
         originalname: file.originalname,
@@ -40,19 +39,21 @@ export class FileService {
       if (error) {
         throw {
           status: 400,
-          message: `Invalid file ${file.originalname}: ${error.message}`,
+          message: `Invalid file ${file.originalname}: ${error.message.replace(/[\\"]/g, '')}`,
         };
       }
     }
 
+    // Process uploads in parallel
     const uploadPromises = files.map(async (file) => {
-      // Create unique filename
+      // Generate unique filename to avoid conflicts
       const uniqueName = `${Date.now()}-${file.originalname}`;
       const storagePath = path.join(FILES_DIR, uniqueName);
 
-      // Write to disk
+      // Save file to disk
       await fs.promises.writeFile(storagePath, file.buffer);
 
+      // Store metadata in DB
       return await FileModel.create({
         projectId,
         name: file.originalname,
@@ -65,13 +66,12 @@ export class FileService {
 
     return await Promise.all(uploadPromises);
   }
-  // list fileDetails
+
+  // list file details
   static async listFiles(projectId: string) {
-    return await FileModel.find({ projectId })
-      .select('name size')
-      .sort({ createdAt: -1 })
-      .lean();
+    return await FileModel.find({ projectId }).select('name size').sort({ createdAt: -1 }).lean();
   }
+
   // delete file by fileId
   static async deleteFile(fileId: string) {
     // Find file in DB
@@ -80,62 +80,53 @@ export class FileService {
       throw { status: 404, message: 'File not found' };
     }
 
-    //  Delete physical file (if exists)
+    // Delete physical file if it exists
     try {
       const fullPath = path.resolve(fileDoc.storagePath);
 
       if (fs.existsSync(fullPath)) {
         await fs.promises.unlink(fullPath);
-        console.log('Deleted file from disk:', fullPath);
-      } else {
-        console.warn('File not found on disk:', fullPath);
       }
     } catch (err) {
-      console.error('Error deleting file from disk:', err);
+      if (err) {
+        return;
+      }
     }
 
-    // Delete DB record
+    // Remove DB record
     await FileModel.findByIdAndDelete(fileId);
 
     return { message: 'File deleted successfully' };
   }
+
   // download file based on file id
-  static async downloadFile(
-    requestParam: { fileId: string; projectId: string },
-    res: Response
-  ) {
+  static async downloadFile(requestParam: { fileId: string; projectId: string }, res: Response) {
     const { fileId, projectId } = requestParam;
 
-    // Fetch ONLY if file belongs to project
+    // Ensure file belongs to given project
     const fileDoc = await FileModel.findOne({
       _id: fileId,
       projectId: projectId,
     });
+
     if (!fileDoc) {
       throw { status: 404, message: 'File not found for this project' };
     }
 
-    // Check physical file
+    // Check if file exists on disk
     if (!fs.existsSync(fileDoc.storagePath)) {
       throw { status: 404, message: 'Physical file missing from storage' };
     }
 
-    // Headers
-    res.setHeader(
-      'Content-Type',
-      fileDoc.mimeType || 'application/octet-stream'
-    );
+    // Set response headers for file download
+    res.setHeader('Content-Type', fileDoc.mimeType || 'application/octet-stream');
 
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="${fileDoc.name}"`
-    );
+    res.setHeader('Content-Disposition', `attachment; filename="${fileDoc.name}"`);
 
-    // Stream
+    // Stream file to response
     const readStream = fs.createReadStream(fileDoc.storagePath);
 
-    readStream.on('error', (err) => {
-      console.error('Stream error:', err);
+    readStream.on('error', () => {
       if (!res.headersSent) {
         res.status(500).json({ error: 'Stream failure' });
       }

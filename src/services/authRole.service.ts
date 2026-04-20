@@ -1,25 +1,23 @@
-import { UsersModel } from '../models/users.model';
+import { UsersModel } from '../models/users.model.js';
 
-export async function verifyEmplyeeRole(email: string): Promise<string | null> {
+// Fetch user role based on email
+export async function verifyEmplyeeRole(email: string): Promise<string | null | undefined> {
   try {
     if (!email) {
-      console.error('Email is missing');
       return null;
     }
 
-    const user = await UsersModel.findOne(
-      { userEmail: email },
-      { role: 1, _id: 0 }
-    ).lean();
+    // Query only required field role
+    const user = await UsersModel.findOne({ userEmail: email }, { role: 1, _id: 0 }).lean();
 
     if (!user) {
-      console.warn(`No user found for email: ${email}`);
       return null;
     }
 
     return user.role || null;
-  } catch (error) {
-    console.error('Error fetching user role:', error);
-    return null;
+  } catch (err) {
+    if (err) {
+      return null;
+    }
   }
 }

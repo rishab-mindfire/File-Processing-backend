@@ -1,11 +1,12 @@
 import mongoose from 'mongoose';
 import fs from 'fs';
-import FileModel from '../models/file.model';
-import JobModel from '../models/job.model';
-import ProjectModel from '../models/project.model';
+import FileModel from '../models/file.model.js';
+import JobModel from '../models/job.model.js';
+import ProjectModel from '../models/project.model.js';
+import { IProject } from '../types/index.js';
 
 export class ProjectServices {
-  //Create Project
+  // Create new project
   static async createNewProject(data: {
     projectName: string;
     projectDescription?: string;
@@ -15,11 +16,12 @@ export class ProjectServices {
     return await project.save();
   }
 
-  // Lists all projects with file/zip counts
+  // List all projects with file/zip counts
   static async listAllProjects() {
     return await ProjectModel.aggregate([
       { $sort: { createdAt: -1 } },
 
+      // Join files collection
       {
         $lookup: {
           from: 'files',
@@ -29,6 +31,7 @@ export class ProjectServices {
         },
       },
 
+      // Join zip jobs collection
       {
         $lookup: {
           from: 'zipjobs',
@@ -38,21 +41,23 @@ export class ProjectServices {
         },
       },
 
+      // Compute derived fields
       {
         $addFields: {
-          totalFiles: { $size: '$files' },
+          totalFiles: { $size: '$files' }, // Count total files
           totalZips: {
             $size: {
               $filter: {
                 input: '$jobs',
                 as: 'job',
-                cond: { $eq: ['$$job.status', 'COMPLETED'] },
+                cond: { $eq: ['$$job.status', 'COMPLETED'] }, // Only completed jobs
               },
             },
           },
         },
       },
 
+      // Exclude unnecessary fields from response
       {
         $project: {
           files: 0,
@@ -63,21 +68,23 @@ export class ProjectServices {
     ]);
   }
 
-  //update project
-  static updateProject = async (id: string, data: any) => {
+  // Update project
+  static updateProject = async (id: string, data: IProject) => {
     return await ProjectModel.findByIdAndUpdate(
       id,
-      { $set: data },
-      { new: true }
+      { $set: data }, // Update only provided fields
+      { new: true }, // Return updated document
     );
   };
 
-  // Get Project Details with basic stats
+  // Get project details with basic stats
   static async getProjectWithStats(projectId: string) {
     const id = new mongoose.Types.ObjectId(projectId);
 
     const stats = await ProjectModel.aggregate([
-      { $match: { _id: id } },
+      { $match: { _id: id } }, // Match specific project
+
+      // Join files
       {
         $lookup: {
           from: 'files',
@@ -86,6 +93,8 @@ export class ProjectServices {
           as: 'files',
         },
       },
+
+      // Join jobs
       {
         $lookup: {
           from: 'zipjobs',
@@ -94,6 +103,8 @@ export class ProjectServices {
           as: 'jobs',
         },
       },
+
+      // Shape final response
       {
         $project: {
           projectName: 1,
@@ -108,8 +119,9 @@ export class ProjectServices {
     return stats[0];
   }
 
-  // delete project with clean-up
+  // Delete project with cleanup
   static async deleteProject(projectId: string) {
+    // Validate projectId
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
       throw { status: 400, message: 'Invalid projectId' };
     }
@@ -119,10 +131,10 @@ export class ProjectServices {
       throw { status: 404, message: 'Project not found' };
     }
 
-    // delete all file records
+    // Fetch all associated files
     const files = await FileModel.find({ projectId });
 
-    // Delete actual physical files from Disk
+    // Delete physical files from disk
     await Promise.all(
       files.map(async (file) => {
         try {
@@ -130,12 +142,14 @@ export class ProjectServices {
             await fs.promises.unlink(file.storagePath);
           }
         } catch (err) {
-          console.error(`Failed to delete disk file: ${file.storagePath}`, err);
+          if (err) {
+            return;
+          }
         }
-      })
+      }),
     );
 
-    // Delete metadata from Database (Cascade)
+    // Cascade delete DB records
     await Promise.all([
       FileModel.deleteMany({ projectId }),
       JobModel.deleteMany({ projectId }),

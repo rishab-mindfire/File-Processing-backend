@@ -44,7 +44,11 @@ async function run() {
 
     await archive.finalize();
   } catch (err) {
-    parentPort.postMessage({ type: 'ERROR', message: err.message });
+    if (err instanceof Error) {
+      parentPort?.postMessage({ type: 'ERROR', message: err.message });
+    } else {
+      parentPort?.postMessage({ type: 'ERROR', message: 'Unknown error' });
+    }
     process.exit(1);
   }
 }

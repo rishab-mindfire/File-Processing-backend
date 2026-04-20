@@ -1,44 +1,51 @@
 import { Request, Response } from 'express';
-import { userServices } from '../services/users.service';
-import { generateToken } from '../services/authGeneral.service';
-import { UsersModel } from '../models/users.model';
-import { verifyEmplyeeRole } from '../services/authRole.service';
-import {
-  userLoginValidation,
-  userRegistrationValidation,
-} from '../Validation/user.validation';
+import { userServices } from '../services/users.service.js';
+import { generateToken } from '../services/authGeneral.service.js';
+import { UsersModel } from '../models/users.model.js';
+import { verifyEmplyeeRole } from '../services/authRole.service.js';
+import { userLoginValidation, userRegistrationValidation } from '../Validation/user.validation.js';
 
 class userClass {
-  //create user detault admin
+  // create user
   userRegistration = async (req: Request, res: Response) => {
     const data = req.body;
+
+    // Check if request body exists
     if (!data) {
       return res.status(400).json({
         message: 'provide body',
       });
     }
 
-    // validating the registarion request
+    // Validate registration request body
     const { error, value } = userRegistrationValidation.validate(data);
-    if (error) return res.send(error.message);
-    //check for unique email
+    if (error) {
+      return res.send(error.message.replace(/[\\"]/g, ''));
+    }
+
+    // Check if email already exists
     const email = await userServices.checkEmail(req.body.userEmail);
+
     if (!email) {
+      // Create new user
       await userServices.createUser(value);
+
       res.status(201).send('user created successfully !');
     } else {
       res.status(409).send('Email allready exists !');
     }
   };
-  //login
+
+  // login user
   userLogin = async (req: Request, res: Response) => {
+    // Check for empty request body
     if (!req.body || Object.keys(req.body).length === 0) {
-      return res
-        .status(400)
-        .json({ message: 'Request body is missing or empty' });
+      return res.status(400).json({ message: 'Request body is missing or empty' });
     }
+
+    // Validate login request
     const { error, value } = userLoginValidation.validate(req.body);
-    //validating the login request
+
     if (error) {
       return res.status(400).json({
         message: 'Validation failed',
@@ -47,31 +54,38 @@ class userClass {
     }
 
     const { userEmail, userPassword } = value;
+
     try {
-      const checkPassword = await userServices.checkSigninPassword(
-        userEmail,
-        userPassword
-      );
+      // Verify user credentials
+      const checkPassword = await userServices.checkSigninPassword(userEmail, userPassword);
+
       if (!checkPassword) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
-      //generate JWT and attach to response header
+
+      // Generate JWT token
       const JWTtoken = generateToken({ userEmail });
+
+      // Fetch user role (for RBAC)
       const userRole = await verifyEmplyeeRole(userEmail);
 
+      // Attach token in response header
       res.setHeader('Authorization', 'Bearer ' + JWTtoken);
+
       return res.status(200).json({
         message: 'Login successful',
         role: userRole,
       });
-    } catch (err) {
+    } catch {
       return res.status(500).json({ message: 'Internal Server Error' });
     }
   };
-  //cahange pass
+
+  // change password
   userChangePassword = async (req: Request, res: Response) => {
-    const data = req.body;
+    // Find user by email
     const user = await UsersModel.findOne({ userEmail: req.body.userEmail });
+
     if (user) {
       res.status(200).send(user);
     } else {
@@ -79,4 +93,5 @@ class userClass {
     }
   };
 }
+
 export const UserCtr = new userClass();

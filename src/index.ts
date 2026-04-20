@@ -11,12 +11,11 @@ const envFile =
 dotenv.config({ path: envFile });
 dotenv.config();
 const app = express();
-
 // cors policy attach
 const frontend_url: string =
-  process.env.FRONTEND_URL || 'http://localhost:5173';
+  process.env.FRONTEND_URL || 'http://localhost:3001';
 const corsOptions = {
-  origin: [frontend_url],
+  origin: [frontend_url, 'http://localhost:3002'],
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
   optionsSuccessStatus: 200,

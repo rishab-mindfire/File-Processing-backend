@@ -1,11 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 import { Response } from 'express';
-import FileModel from '../models/fileModel';
+import FileModel from '../models/file.model';
 import { fileSchema } from '../Validation/fileValidation';
 
 const FILES_DIR = path.resolve(
-  process.env.UPLOAD_PATH_FILES || './uploads/files',
+  process.env.UPLOAD_PATH_FILES || './uploads/files'
 );
 
 const ensureDirectoryExists = (dirPath: string) => {
@@ -102,7 +102,7 @@ export class FileService {
   // download file based on file id
   static async downloadFile(
     requestParam: { fileId: string; projectId: string },
-    res: Response,
+    res: Response
   ) {
     const { fileId, projectId } = requestParam;
 
@@ -123,12 +123,12 @@ export class FileService {
     // Headers
     res.setHeader(
       'Content-Type',
-      fileDoc.mimeType || 'application/octet-stream',
+      fileDoc.mimeType || 'application/octet-stream'
     );
 
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="${fileDoc.name}"`,
+      `attachment; filename="${fileDoc.name}"`
     );
 
     // Stream

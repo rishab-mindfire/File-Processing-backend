@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { FileService } from '../services/fileService';
-import ProjectModel from '../models/projectModel';
+import { FileService } from '../services/file.service';
+import ProjectModel from '../models/project.model';
 import mongoose from 'mongoose';
 
 export class fileCtr {

@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { verifyEmplyeeRole } from '../services/authRole';
-import { verifyTokenAndGetUser } from '../services/authGeneral';
+import { verifyEmplyeeRole } from '../services/authRole.service';
+import { verifyTokenAndGetUser } from '../services/authGeneral.service';
 
 //default request will be found email type declaration
 declare global {

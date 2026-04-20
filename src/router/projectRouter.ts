@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { ProjectCtr } from '../controller/projectCtr';
-import { JobCtr } from '../controller/JobCtr';
+import { ProjectCtr } from '../controller/project.controller';
+import { JobCtr } from '../controller/Job.controller';
 import multer from 'multer';
-import { fileCtr } from '../controller/fileCtr';
+import { fileCtr } from '../controller/file.controller';
 
 // Configure Multer for file storage
 const storage = multer.memoryStorage();

@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
-import { userServices } from '../services/users';
-import { generateToken } from '../services/authGeneral';
+import { userServices } from '../services/users.service';
+import { generateToken } from '../services/authGeneral.service';
+import { UsersModel } from '../models/users.model';
+import { verifyEmplyeeRole } from '../services/authRole.service';
 import {
-  UserLoginValidation,
-  UserRegistrationValidation,
+  userLoginValidation,
+  userRegistrationValidation,
 } from '../Validation/userRegistration';
-import { UsersModel } from '../models/users';
-import { verifyEmplyeeRole } from '../services/authRole';
 
 class userClass {
   //create user detault admin
@@ -19,7 +19,7 @@ class userClass {
     }
 
     // validating the registarion request
-    const { error, value } = UserRegistrationValidation.validate(data);
+    const { error, value } = userRegistrationValidation.validate(data);
     if (error) return res.send(error.message);
     //check for unique email
     const email = await userServices.checkEmail(req.body.userEmail);
@@ -37,7 +37,7 @@ class userClass {
         .status(400)
         .json({ message: 'Request body is missing or empty' });
     }
-    const { error, value } = UserLoginValidation.validate(req.body);
+    const { error, value } = userLoginValidation.validate(req.body);
     //validating the login request
     if (error) {
       return res.status(400).json({
@@ -50,7 +50,7 @@ class userClass {
     try {
       const checkPassword = await userServices.checkSigninPassword(
         userEmail,
-        userPassword,
+        userPassword
       );
       if (!checkPassword) {
         return res.status(401).json({ message: 'Invalid credentials' });

@@ -6,7 +6,7 @@ import { verifyEmplyeeRole } from '../services/authRole.service';
 import {
   userLoginValidation,
   userRegistrationValidation,
-} from '../Validation/userRegistration';
+} from '../Validation/user.validation';
 
 class userClass {
   //create user detault admin

@@ -31,7 +31,12 @@ function authRoleBased(...allowedRoles: string[]) {
         throw new Error('JWT_SECRET is missing');
       }
 
-      const decoded: any = jwt.verify(token, secret);
+      let decoded: any;
+      try {
+        decoded = jwt.verify(token, secret);
+      } catch {
+        return res.status(401).json({ message: 'Invalid token' });
+      }
 
       const userEmail = decoded.userEmail;
 
@@ -40,8 +45,9 @@ function authRoleBased(...allowedRoles: string[]) {
       }
 
       const userRole = await verifyEmplyeeRole(userEmail);
+      // const userRole = "admin";
 
-      if (userRole && !allowedRoles.includes(userRole)) {
+      if (!userRole || !allowedRoles.includes(userRole)) {
         return res.status(403).json({ message: 'User not authorized' });
       }
 
@@ -54,5 +60,4 @@ function authRoleBased(...allowedRoles: string[]) {
     }
   };
 }
-
 export default authRoleBased;

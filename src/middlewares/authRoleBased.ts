@@ -13,53 +13,24 @@ declare global {
 function authRoleBased(...allowedRoles: string[]) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      if (req.method === 'OPTIONS') {
-        return next();
-      }
+      console.log('AUTH HIT');
 
       const authHeader = req.headers.authorization;
-
-      if (!authHeader) {
-        return res.status(401).json({ message: 'Token not provided' });
-      }
+      if (!authHeader) return res.status(401).send('No token');
 
       const token = authHeader.split(' ')[1];
+      if (!token) return res.status(401).send('Bad token');
 
-      if (!token) {
-        return res.status(401).json({ message: 'Invalid token format' });
-      }
+      const decoded: any = jwt.verify(token, 'hardcoded_secret');
 
-      const secret = 'DLCEOeL8Xf5TMDBaWnFeVAL86GoAEwdRjERMdO84Dg5';
+      console.log('DECODED:', decoded);
 
-      if (!secret) {
-        throw new Error('JWT_SECRET is missing');
-      }
-
-      let decoded: any;
-      try {
-        decoded = jwt.verify(token, secret);
-      } catch {
-        return res.status(401).json({ message: 'Invalid token' });
-      }
-
-      const userEmail = decoded.userEmail;
-
-      if (!userEmail) {
-        return res.status(401).json({ message: 'Invalid token payload' });
-      }
-
-      const userRole = await verifyEmplyeeRole(userEmail);
-
-      if (!userRole || !allowedRoles.includes(userRole)) {
-        return res.status(403).json({ message: 'User not authorized' });
-      }
-
-      req.userEmail = userEmail;
+      req.userEmail = decoded.userEmail;
 
       next();
-    } catch (error) {
-      console.error('Auth error:', error);
-      return res.status(500).json({ message: 'Authentication failed' });
+    } catch (err) {
+      console.error('AUTH ERROR:', err);
+      return res.status(500).send('Auth failed');
     }
   };
 }

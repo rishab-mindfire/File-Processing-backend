@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { ProjectServices } from '../services/projectsServices';
-import { userServices } from '../services/users';
+import { ProjectServices } from '../services/projects.service';
+import { userServices } from '../services/users.service';
 import { projectSchema } from '../Validation/projectValidation';
 import mongoose from 'mongoose';
 

@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 import fs from 'fs';
-import FileModel from '../models/fileModel';
-import JobModel from '../models/jobModel';
-import ProjectModel from '../models/projectModel';
+import FileModel from '../models/file.model';
+import JobModel from '../models/job.model';
+import ProjectModel from '../models/project.model';
 
 export class ProjectServices {
   //Create Project
@@ -68,7 +68,7 @@ export class ProjectServices {
     return await ProjectModel.findByIdAndUpdate(
       id,
       { $set: data },
-      { new: true },
+      { new: true }
     );
   };
 
@@ -132,7 +132,7 @@ export class ProjectServices {
         } catch (err) {
           console.error(`Failed to delete disk file: ${file.storagePath}`, err);
         }
-      }),
+      })
     );
 
     // Delete metadata from Database (Cascade)

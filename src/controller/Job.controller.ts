@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
-import JobModel from '../models/jobModel';
-import FileModel from '../models/fileModel';
-import { JobService } from '../services/jobService';
+import JobModel from '../models/job.model';
+import FileModel from '../models/file.model';
+import { JobService } from '../services/job.service';
 import { fileZipSchema } from '../Validation/zipFileValidation';
 
 export class JobCtr {

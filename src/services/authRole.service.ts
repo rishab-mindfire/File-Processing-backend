@@ -1,10 +1,10 @@
-import { UsersModel } from '../models/users';
+import { UsersModel } from '../models/users.model';
 // verify role based on username
 export async function verifyEmplyeeRole(email: string) {
   try {
     const user = await UsersModel.findOne(
       { userEmail: email },
-      { role: 1, _id: 0 },
+      { role: 1, _id: 0 }
     );
     if (user) return user.role;
   } catch (error) {

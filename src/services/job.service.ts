@@ -3,9 +3,9 @@ import mongoose from 'mongoose';
 import path from 'path';
 import fs from 'fs';
 import { Response } from 'express';
-import FileModel from '../models/fileModel';
-import JobModel from '../models/jobModel';
-import ProjectModel from '../models/projectModel';
+import FileModel from '../models/file.model';
+import JobModel from '../models/job.model';
+import ProjectModel from '../models/project.model';
 
 const ZIPS_DIR = path.resolve(process.env.UPLOAD_PATH_ZIPS || './uploads/zips');
 const ensureDirectoryExists = (dirPath: string) => {
@@ -127,7 +127,7 @@ export class JobService {
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="${fileDoc.name}"`,
+      `attachment; filename="${fileDoc.name}"`
     );
 
     // Stream directly from disk to client

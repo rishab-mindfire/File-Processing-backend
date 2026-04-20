@@ -1,4 +1,4 @@
-import { UsersModel } from '../models/users';
+import { UsersModel } from '../models/users.model';
 import bcrypt from 'bcrypt';
 import { UserType } from '../types';
 import { generateCustomId } from '../utils/randomId';
@@ -31,7 +31,7 @@ class Users {
       //check hased password
       const match = await bcrypt.compare(
         password,
-        user.userPassword.toString(),
+        user.userPassword.toString()
       );
       if (match) return true;
       else return false;

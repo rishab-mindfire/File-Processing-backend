@@ -8,12 +8,15 @@ import { projectRoute } from './router/projectRouter';
 
 const envFile =
   process.env.NODE_ENV === 'production' ? '.env.production' : '.env.dev';
+
 dotenv.config({ path: envFile });
-dotenv.config();
+
 const app = express();
-// cors policy attach
+
+// CORS
 const frontend_url: string =
   process.env.FRONTEND_URL || 'http://localhost:3001';
+
 const corsOptions = {
   origin: [frontend_url, 'http://localhost:3002'],
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
@@ -24,30 +27,22 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Middleware to parse JSON and URL-encoded bodies
+// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// routes
+// Routes
 app.use('/user', userRouter);
 app.use('/projects', authRoleBased('admin'), projectRoute);
 
-const startServer = async () => {
-  try {
-    await connectDB();
-    app.listen(port, () => {
-      console.log(`App is running on ${port}`);
-    });
-  } catch (err) {
-    console.error('Failed to connect to DB', err);
-  }
-};
-
-startServer();
-
-const port = process.env.PORT || 3000;
-const env = process.env.NODE_ENV;
-app.listen(port, () => {
-  console.log(`${env} : App is running on ${port}`);
+// Connect DB
+connectDB().catch((err) => {
+  console.error('DB connection failed:', err);
 });
+
+// Main Route
+app.get('/', (req, res) => {
+  res.send('API is running');
+});
+
 export default app;

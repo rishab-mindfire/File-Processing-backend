@@ -23,6 +23,7 @@ import app from '../src/index';
 import { userServices } from '../src/services/users.service.js';
 import * as authGeneral from '../src/services/authGeneral.service.js';
 import * as authRole from '../src/services/authRole.service.js';
+import { mockAuthUserExiest } from './mock/mockData.js';
 
 const request = supertest(app);
 
@@ -87,10 +88,7 @@ describe('User API Integration', () => {
 
   // EMAIL EXISTS
   it('should return 409 if email already exists', async () => {
-    vi.spyOn(userServices, 'checkEmail').mockResolvedValue({
-      _id: '1',
-      userEmail: 'existing@gmail.com',
-    });
+    vi.spyOn(userServices, 'checkEmail').mockResolvedValue(mockAuthUserExiest);
 
     const response = await request.post('/user/register').send({
       userName: 'rishab',

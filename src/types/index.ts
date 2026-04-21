@@ -1,4 +1,4 @@
-import mongoose, { HydratedDocument, Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 
 // User Registration
 export interface UserType {
@@ -80,9 +80,14 @@ export interface ParsedError {
   status: number;
   message: string;
 }
-// mock
+
+// mock Testing Data
 export type MockUser = Partial<UserType> & {
   _id: string;
+};
+export type MockUserEmail = {
+  _id: Types.ObjectId;
+  userEmail: string;
 };
 export interface AuthRequest extends Request {
   userEmail?: string;

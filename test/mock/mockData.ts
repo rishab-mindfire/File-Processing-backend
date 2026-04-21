@@ -29,8 +29,13 @@ export const mockProjectWithStats = {
 } as unknown as Awaited<ReturnType<typeof ProjectServices.getProjectWithStats>>;
 
 // --- User Mocks ---
-
 export const mockAuthUser = {
   _id: '65f1a2b3c4d5e6f7a8b9c0d1',
   email: 'test@example.com',
+} as unknown as Awaited<ReturnType<typeof userServices.checkEmail>>;
+
+// --- User existing  ---
+export const mockAuthUserExiest = {
+  _id: '65f1a2b3c4d5e6f7a8b9c0d1',
+  userEmail: 'existing@gmail.com',
 } as unknown as Awaited<ReturnType<typeof userServices.checkEmail>>;

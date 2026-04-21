@@ -35,9 +35,9 @@ describe('Project Creation API Integration', () => {
     };
 
     // mock project and and add email _id form userservice
-    vi.mocked(
-      ProjectServices.ProjectServices.createNewProject,
-    ).mockResolvedValue(mockProject as any);
+    vi.mocked(ProjectServices.ProjectServices.createNewProject).mockResolvedValue(
+      mockProject as any,
+    );
     vi.mocked(userServices.userServices.checkEmail).mockResolvedValue({
       _id: '65f1a2b3c4d5e6f7a8b9c0d1',
       email: 'test@example.com',
@@ -56,12 +56,8 @@ describe('Project Creation API Integration', () => {
   });
   it('should return 401 if userEmail is missing (auth fails)', async () => {
     //simulate missing email
-    vi.mocked(
-      ProjectServices.ProjectServices.createNewProject,
-    ).mockResolvedValue({} as any);
-    vi.mocked(userServices.userServices.checkEmail).mockResolvedValue(
-      null as any,
-    );
+    vi.mocked(ProjectServices.ProjectServices.createNewProject).mockResolvedValue({} as any);
+    vi.mocked(userServices.userServices.checkEmail).mockResolvedValue(null as any);
 
     const response = await request.post('/projects').send({
       projectName: 'Test Project',
@@ -89,12 +85,10 @@ describe('Project Creation API Integration', () => {
       mockUpdatedProject as any,
     );
 
-    const response = await request
-      .put('/projects/65f1a2b3c4d5e6f7a8b9c0d2')
-      .send({
-        projectName: 'Updated Project',
-        projectDescription: 'Updated desc',
-      });
+    const response = await request.put('/projects/65f1a2b3c4d5e6f7a8b9c0d2').send({
+      projectName: 'Updated Project',
+      projectDescription: 'Updated desc',
+    });
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual(mockUpdatedProject);
@@ -113,9 +107,9 @@ describe('Project Creation API Integration', () => {
       { _id: '2', projectName: 'P2' },
     ];
 
-    vi.mocked(
-      ProjectServices.ProjectServices.listAllProjects,
-    ).mockResolvedValue(mockProjects as any);
+    vi.mocked(ProjectServices.ProjectServices.listAllProjects).mockResolvedValue(
+      mockProjects as any,
+    );
 
     const response = await request.get('/projects');
 
@@ -132,9 +126,9 @@ describe('Project Creation API Integration', () => {
       jobCount: 10,
     };
 
-    vi.mocked(
-      ProjectServices.ProjectServices.getProjectWithStats,
-    ).mockResolvedValue(mockProject as any);
+    vi.mocked(ProjectServices.ProjectServices.getProjectWithStats).mockResolvedValue(
+      mockProject as any,
+    );
 
     const response = await request.get('/projects/65f1a2b3c4d5e6f7a8b9c0d2');
 
@@ -142,9 +136,7 @@ describe('Project Creation API Integration', () => {
     expect(response.body).toEqual(mockProject);
   });
   it('should return 404 if project not found', async () => {
-    vi.mocked(
-      ProjectServices.ProjectServices.getProjectWithStats,
-    ).mockResolvedValue(null as any);
+    vi.mocked(ProjectServices.ProjectServices.getProjectWithStats).mockResolvedValue(null as any);
 
     const response = await request.get('/projects/65f1a2b3c4d5e6f7a8b9c0d2');
 

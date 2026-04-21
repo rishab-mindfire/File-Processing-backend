@@ -21,9 +21,7 @@ describe('User API Integration', () => {
 
   //LOGIN SUCCESS
   it('should login and return token', async () => {
-    vi.mocked(userServices.userServices.checkSigninPassword).mockResolvedValue(
-      true,
-    );
+    vi.mocked(userServices.userServices.checkSigninPassword).mockResolvedValue(true);
     vi.mocked(authGeneral.generateToken).mockReturnValue('mocked-token' as any);
     vi.mocked(authRole.verifyEmplyeeRole).mockResolvedValue('admin');
 
@@ -50,9 +48,7 @@ describe('User API Integration', () => {
 
   //INVALID CREDENTIALS
   it('should return 401 for wrong credentials', async () => {
-    vi.mocked(userServices.userServices.checkSigninPassword).mockResolvedValue(
-      false,
-    );
+    vi.mocked(userServices.userServices.checkSigninPassword).mockResolvedValue(false);
 
     const response = await request.post('/user/login').send({
       userEmail: 'test@gmail.com',
@@ -65,12 +61,8 @@ describe('User API Integration', () => {
 
   //REGISTRATION SUCCESS
   it('should register user successfully', async () => {
-    vi.mocked(userServices.userServices.checkEmail).mockResolvedValue(
-      null as any,
-    );
-    vi.mocked(userServices.userServices.createUser).mockResolvedValue(
-      {} as any,
-    );
+    vi.mocked(userServices.userServices.checkEmail).mockResolvedValue(null as any);
+    vi.mocked(userServices.userServices.createUser).mockResolvedValue({} as any);
 
     const response = await request.post('/user/register').send({
       userName: 'rishab',

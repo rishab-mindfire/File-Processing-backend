@@ -3,12 +3,12 @@ import supertest from 'supertest';
 import app from '../src/index';
 
 // Mock required modules
-vi.mock('../src/services/users');
-vi.mock('../src/services/authRole');
+vi.mock('../src/services/users.service');
+vi.mock('../src/services/authRole.service');
 
 // Import the vi.mock calls
-import * as userServices from '../src/services/users';
-import * as authRoleService from '../src/services/authRole';
+import * as userServices from '../src/services/users.service';
+import * as authRoleService from '../src/services/authRole.service';
 
 const request = supertest(app);
 
@@ -19,9 +19,7 @@ describe('User Login API Integration', () => {
 
   it('should return 200 and return Bearer token on successful login', async () => {
     // mocked on the imported function
-    vi.mocked(userServices.userServices.checkSigninPassword).mockResolvedValue(
-      true,
-    );
+    vi.mocked(userServices.userServices.checkSigninPassword).mockResolvedValue(true);
 
     //add auth as admin
     vi.mocked(authRoleService.verifyEmplyeeRole).mockResolvedValue('admin');
@@ -40,9 +38,7 @@ describe('User Login API Integration', () => {
   });
   //validate Email
   it('Email should valid formate', async () => {
-    vi.mocked(userServices.userServices.checkSigninPassword).mockResolvedValue(
-      false,
-    );
+    vi.mocked(userServices.userServices.checkSigninPassword).mockResolvedValue(false);
 
     const response = await request
       .post('/user/login')
@@ -54,9 +50,7 @@ describe('User Login API Integration', () => {
   });
   //invalid wrong password
   it('should return 401 for invalid credentials on wrong credentials', async () => {
-    vi.mocked(userServices.userServices.checkSigninPassword).mockResolvedValue(
-      false,
-    );
+    vi.mocked(userServices.userServices.checkSigninPassword).mockResolvedValue(false);
 
     const response = await request
       .post('/user/login')

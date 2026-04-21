@@ -1,3 +1,7 @@
+// Job Service Module
+// Manages the orchestration of asynchronous ZIP compression tasks using Worker Threads
+// Handles the full lifecycle of compression jobs including creation, tracking, and deletion
+// Bridges the gap between the primary API thread and intensive filesystem operations
 import { Worker } from 'worker_threads';
 import mongoose, { Types } from 'mongoose';
 import path from 'path';
@@ -15,22 +19,21 @@ import {
   WorkerMessage,
 } from '../types/index.js';
 
-/* ================= PATH SETUP ================= */
-
+// Define the root directory for generated ZIP archives from environment or defaults
 const ZIPS_DIR = path.resolve(process.env.UPLOAD_PATH_ZIPS || './uploads/zips');
 
+// Helper function to verify or create directory structures recursively
 const ensureDirectoryExists = (dirPath: string) => {
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
   }
 };
 
+// Initialize the ZIP storage directory during the service bootstrap phase
 ensureDirectoryExists(ZIPS_DIR);
 
-/* ================= SERVICE ================= */
-
 export class JobService {
-  /* ========= CREATE ZIP ========= */
+  // Spawns a background Worker Thread to compress selected files into a single ZIP
   static async createZip({
     job,
     projectId,
@@ -40,20 +43,20 @@ export class JobService {
     projectId: string;
     selectedFiles: SelectedFile[];
   }) {
+    // Verify project existence before initiating the resource-heavy worker
     const project = await ProjectModel.findById(projectId);
     if (!project) {
       throw new Error('Project not found');
     }
 
-    // ESM-safe __dirname
+    // Determine the absolute path to the worker script in an ESM environment
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
-
-    // IMPORTANT: ensure correct runtime path (dist vs src)
     const workerPath = path.resolve(__dirname, '../workers/zip-worker.cjs');
 
     ensureDirectoryExists(ZIPS_DIR);
 
+    // Initialize the worker and pass the file metadata as workerData
     const worker = new Worker(workerPath, {
       workerData: {
         jobId: job._id.toString(),
@@ -66,10 +69,11 @@ export class JobService {
       },
     });
 
-    /* ===== WORKER MESSAGE ===== */
+    // Handle messages sent from the worker thread back to the main process
     worker.on('message', async (msg: WorkerMessage) => {
       if (msg.type === 'DONE') {
         try {
+          // Register the newly created ZIP file in the File collection
           const newFile = await FileModel.create({
             projectId,
             name: msg.name,
@@ -79,6 +83,7 @@ export class JobService {
             isGenerated: true,
           });
 
+          // Update the job record to reflect successful completion
           await JobModel.findByIdAndUpdate(job._id, {
             status: 'COMPLETED',
             outputFileId: newFile._id,
@@ -88,7 +93,6 @@ export class JobService {
           });
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : 'Failed to save ZIP metadata';
-
           await JobModel.findByIdAndUpdate(job._id, {
             status: 'FAILED',
             error: message,
@@ -96,6 +100,7 @@ export class JobService {
         }
       }
 
+      // Handle explicit errors reported by the worker logic
       if (msg.type === 'ERROR') {
         await JobModel.findByIdAndUpdate(job._id, {
           status: 'FAILED',
@@ -104,10 +109,9 @@ export class JobService {
       }
     });
 
-    /* ===== WORKER ERROR ===== */
+    // Handle unmanaged crashes or low-level errors in the worker thread
     worker.on('error', async (err: Error) => {
       const message = err.message || 'Worker crashed';
-
       await JobModel.findByIdAndUpdate(job._id, {
         status: 'FAILED',
         error: message,
@@ -115,12 +119,13 @@ export class JobService {
     });
   }
 
-  /* ========= DOWNLOAD ZIP ========= */
+  // Locates a completed ZIP job and streams the physical file to the client
   static async downloadZip(jobId: string, res: Response) {
     if (!mongoose.Types.ObjectId.isValid(jobId)) {
       throw new Error('Invalid jobId');
     }
 
+    // Populate the output file metadata to access the storage path
     const job = await JobModel.findById(jobId).populate('outputFileId');
 
     if (!job) {
@@ -130,15 +135,19 @@ export class JobService {
     if (job.status !== 'COMPLETED' || !job.outputFileId) {
       throw new Error('ZIP file is not ready or failed to generate');
     }
+
     const fileDoc = job.outputFileId as unknown as FileDocType;
 
+    // Verify disk availability before attempting to stream
     if (!fs.existsSync(fileDoc.storagePath)) {
       throw new Error('Physical ZIP file not found on server');
     }
 
+    // Set binary headers for ZIP file transmission
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="${fileDoc.name}"`);
 
+    // Stream the archive to the response to handle large files efficiently
     const fileStream = fs.createReadStream(fileDoc.storagePath);
 
     fileStream.on('error', (err: Error) => {
@@ -150,12 +159,13 @@ export class JobService {
     fileStream.pipe(res);
   }
 
-  /* ========= LIST ZIPS ========= */
+  // Returns a list of all successful ZIP jobs for a project, mapped for UI display
   static async listZips(projectId: string) {
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
       throw new Error('Invalid Project ID');
     }
 
+    // Retrieve and populate completed compression jobs sorted by date
     const completedJobs = await JobModel.find({
       projectId: new mongoose.Types.ObjectId(projectId),
       type: 'ZIP_COMPRESSION',
@@ -167,6 +177,8 @@ export class JobService {
       })
       .sort({ completedAt: -1 })
       .lean();
+
+    // Map database results into a standard format for the frontend
     return completedJobs
       .filter(
         (job) =>
@@ -184,7 +196,7 @@ export class JobService {
       });
   }
 
-  /* ========= DELETE ZIP ========= */
+  // Purges a ZIP job record and unlinks the associated physical archive from disk
   static async deleteZipJob(jobId: string) {
     if (!mongoose.Types.ObjectId.isValid(jobId)) {
       throw new Error('Invalid jobId');
@@ -196,6 +208,7 @@ export class JobService {
       throw new Error('Job not found');
     }
 
+    // Remove the generated file asset and metadata if it exists
     if (job.outputFileId) {
       const fileDoc = await FileModel.findById(job.outputFileId);
 
@@ -206,6 +219,7 @@ export class JobService {
       await FileModel.findByIdAndDelete(job.outputFileId);
     }
 
+    // Finalize deletion of the job tracking record
     await JobModel.findByIdAndDelete(jobId);
 
     return { success: true, message: 'ZIP job deleted successfully' };

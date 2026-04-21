@@ -1,34 +1,38 @@
+// File Management Service Module
+// Orchestrates local filesystem operations and database metadata synchronization
+// Provides comprehensive file lifecycle methods including upload, list, delete, and download
+// Implements strict validation and unique naming conventions to prevent data collisions
 import fs from 'fs';
 import path from 'path';
 import { Response } from 'express';
 import FileModel from '../models/file.model.js';
 import { fileSchema } from '../Validation/fileValidation.js';
 
-// Resolve upload directory
+// Define the root directory for physical file storage from environment or defaults
 const FILES_DIR = path.resolve(process.env.UPLOAD_PATH_FILES || './uploads/files');
 
-// Ensure directory exists before using it
+// Helper function to verify or create directory structures recursively
 const ensureDirectoryExists = (dirPath: string) => {
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
   }
 };
 
-// Create base upload directory at startup
+// Initialize the storage directory during the service bootstrap phase
 ensureDirectoryExists(FILES_DIR);
 
 export class FileService {
-  // upload files
+  // Handles multi-file uploads by validating types and persisting to disk and database
   static async uploadFiles(projectId: string, files: Express.Multer.File[]) {
-    // Validate files array
+    // Reject requests that do not contain file data
     if (!files || files.length === 0) {
       throw { status: 400, message: 'No files uploaded' };
     }
 
-    // Ensure storage directory exists
+    // Verify directory availability before starting the upload stream
     ensureDirectoryExists(FILES_DIR);
 
-    // Validate each file using schema
+    // Validate metadata for all files against the defined schema before processing
     for (const file of files) {
       const { error } = fileSchema.validate({
         originalname: file.originalname,
@@ -44,16 +48,16 @@ export class FileService {
       }
     }
 
-    // Process uploads in parallel
+    // Execute file persistence and database record creation in parallel for performance
     const uploadPromises = files.map(async (file) => {
-      // Generate unique filename to avoid conflicts
+      // Append a timestamp to the filename to ensure uniqueness in the filesystem
       const uniqueName = `${Date.now()}-${file.originalname}`;
       const storagePath = path.join(FILES_DIR, uniqueName);
 
-      // Save file to disk
+      // Write the file buffer to the localized storage path
       await fs.promises.writeFile(storagePath, file.buffer);
 
-      // Store metadata in DB
+      // Register the file metadata within the project's database context
       return await FileModel.create({
         projectId,
         name: file.originalname,
@@ -67,20 +71,20 @@ export class FileService {
     return await Promise.all(uploadPromises);
   }
 
-  // list file details
+  // Retrieves an optimized list of file summaries associated with a specific project
   static async listFiles(projectId: string) {
     return await FileModel.find({ projectId }).select('name size').sort({ createdAt: -1 }).lean();
   }
 
-  // delete file by fileId
+  // Removes a file record from the database and deletes the corresponding disk entry
   static async deleteFile(fileId: string) {
-    // Find file in DB
+    // Locate the document to retrieve the physical storage path
     const fileDoc = await FileModel.findById(fileId);
     if (!fileDoc) {
       throw { status: 404, message: 'File not found' };
     }
 
-    // Delete physical file if it exists
+    // Attempt to unlink the file from the filesystem if it exists
     try {
       const fullPath = path.resolve(fileDoc.storagePath);
 
@@ -88,22 +92,23 @@ export class FileService {
         await fs.promises.unlink(fullPath);
       }
     } catch (err) {
+      // Log failure but proceed to record cleanup to prevent ghost entries
       if (err) {
         return;
       }
     }
 
-    // Remove DB record
+    // Purge the metadata record from the database collection
     await FileModel.findByIdAndDelete(fileId);
 
     return { message: 'File deleted successfully' };
   }
 
-  // download file based on file id
+  // Facilitates secure file downloads via read-streams and appropriate MIME headers
   static async downloadFile(requestParam: { fileId: string; projectId: string }, res: Response) {
     const { fileId, projectId } = requestParam;
 
-    // Ensure file belongs to given project
+    // Verify that the requested file exists and belongs to the active project
     const fileDoc = await FileModel.findOne({
       _id: fileId,
       projectId: projectId,
@@ -113,19 +118,19 @@ export class FileService {
       throw { status: 404, message: 'File not found for this project' };
     }
 
-    // Check if file exists on disk
+    // Validate that the physical asset hasn't been removed from storage
     if (!fs.existsSync(fileDoc.storagePath)) {
       throw { status: 404, message: 'Physical file missing from storage' };
     }
 
-    // Set response headers for file download
+    // Configure the HTTP response for binary data transmission
     res.setHeader('Content-Type', fileDoc.mimeType || 'application/octet-stream');
-
     res.setHeader('Content-Disposition', `attachment; filename="${fileDoc.name}"`);
 
-    // Stream file to response
+    // Stream the file content directly to the response to optimize memory usage
     const readStream = fs.createReadStream(fileDoc.storagePath);
 
+    // Monitor stream health and prevent response headers from being sent twice
     readStream.on('error', () => {
       if (!res.headersSent) {
         res.status(500).json({ error: 'Stream failure' });

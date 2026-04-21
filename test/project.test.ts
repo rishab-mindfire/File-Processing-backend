@@ -64,7 +64,7 @@ describe('Project API Integration', () => {
   it('should update a project when data is valid', async () => {
     vi.mocked(ProjectServices.updateProject).mockResolvedValue(mockUpdatedProject);
 
-    // Add the '!' before accessing the property
+    //
     const response = await request.put(`/projects/${mockUpdatedProject!._id}`).send({
       projectName: 'Updated Project',
       projectDescription: 'Updated desc',

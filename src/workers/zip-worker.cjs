@@ -20,54 +20,31 @@ const path = require('path');
  * Main execution function for the worker thread.
  */
 async function run() {
-  // Destructure input data passed from the main thread
-  const { files, projectId, outputDir } = workerData;
+  // Get outputPath from workerData (provided by JobService)
+  const { files, outputPath } = workerData;
 
   try {
-    // Setup the output zip file path with a unique timestamp
-    const zipName = `project_${projectId}_${Date.now()}.zip`;
-    const outputPath = path.join(outputDir, zipName);
-
-    // Initialize write stream and archiver (compression level 9 for max efficiency)
     const output = fs.createWriteStream(outputPath);
     const archive = archiver('zip', { zlib: { level: 9 } });
 
-    // Handle stream completion
     output.on('close', () => {
       parentPort.postMessage({
         type: 'DONE',
-        outputPath: outputPath,
-        name: zipName,
         size: archive.pointer(),
       });
     });
 
-    // Handle archiver errors
-    archive.on('error', (err) => {
-      throw err;
-    });
-
-    // Connect (pipe) the archive data to the physical file stream
     archive.pipe(output);
 
-    // Iterate through requested files and append to archive
     for (const file of files) {
       if (fs.existsSync(file.path)) {
-        // Use ReadStreams to keep memory usage low even for large files
         archive.append(fs.createReadStream(file.path), { name: file.name });
-      } else {
-        console.warn(`[Worker] File not found, skipping: ${file.path}`);
       }
     }
 
-    // Finalize the archive (triggers the 'close' event on the output stream)
     await archive.finalize();
   } catch (err) {
-    // Report failure back to main thread
-    const errorMessage = err instanceof Error ? err.message : 'Unknown error during zipping';
-    parentPort?.postMessage({ type: 'ERROR', message: errorMessage });
-
-    // Exit worker with error code
+    parentPort?.postMessage({ type: 'ERROR', message: err.message });
     process.exit(1);
   }
 }

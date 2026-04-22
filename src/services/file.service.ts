@@ -73,7 +73,14 @@ export class FileService {
 
   // Retrieves an optimized list of file summaries associated with a specific project
   static async listFiles(projectId: string) {
-    return await FileModel.find({ projectId }).select('name size').sort({ createdAt: -1 }).lean();
+    return await FileModel.find({
+      projectId,
+      // This line filters out any file where the mimeType is 'application/zip'
+      mimeType: { $ne: 'application/zip' },
+    })
+      .select('name size')
+      .sort({ createdAt: -1 })
+      .lean();
   }
 
   // Removes a file record from the database and deletes the corresponding disk entry

@@ -56,43 +56,45 @@ export class JobService {
 
     ensureDirectoryExists(ZIPS_DIR);
 
-    // Initialize the worker and pass the file metadata as workerData
+    // 1. GENERATE THE PATH AND RECORD HERE ONCE
+    const zipFileName = `project_${projectId}_${Date.now()}.zip`;
+    const outputPath = path.join(ZIPS_DIR, zipFileName);
+
+    // Create the record NOW so we have the ID, mark it as generated
+    const zipFileRecord = await FileModel.create({
+      projectId,
+      name: zipFileName,
+      storagePath: outputPath,
+      size: 0, // Will update this when worker finishes
+      mimeType: 'application/zip',
+      isGenerated: true,
+    });
+
     const worker = new Worker(workerPath, {
       workerData: {
         jobId: job._id.toString(),
         projectId,
-        outputDir: ZIPS_DIR,
-        files: selectedFiles.map((f) => ({
-          name: f.name,
-          path: f.storagePath,
-        })),
+        outputPath, // Send the path we already decided
+        files: selectedFiles.map((f) => ({ name: f.name, path: f.storagePath })),
       },
     });
 
-    // Handle messages sent from the worker thread back to the main process
     worker.on('message', async (msg: WorkerMessage) => {
       if (msg.type === 'DONE') {
         try {
-          // Register the newly created ZIP file in the File collection
-          const newFile = await FileModel.create({
-            projectId,
-            name: msg.name,
-            storagePath: msg.outputPath,
-            size: msg.size,
-            mimeType: 'application/zip',
-            isGenerated: true,
-          });
+          // Just update the existing record with the final size
+          await FileModel.findByIdAndUpdate(zipFileRecord._id, { size: msg.size });
 
-          // Update the job record to reflect successful completion
           await JobModel.findByIdAndUpdate(job._id, {
             status: 'COMPLETED',
-            outputFileId: newFile._id,
+            outputFileId: zipFileRecord._id, // Link to the record we made above
             completedAt: new Date(),
             progress: 100,
             size: msg.size,
           });
-        } catch (err: unknown) {
+        } catch (err) {
           const message = err instanceof Error ? err.message : 'Failed to save ZIP metadata';
+
           await JobModel.findByIdAndUpdate(job._id, {
             status: 'FAILED',
             error: message,
@@ -100,22 +102,11 @@ export class JobService {
         }
       }
 
-      // Handle explicit errors reported by the worker logic
       if (msg.type === 'ERROR') {
-        await JobModel.findByIdAndUpdate(job._id, {
-          status: 'FAILED',
-          error: msg.message,
-        });
+        // Cleanup: If zipping failed, delete the record we prepared
+        await FileModel.findByIdAndDelete(zipFileRecord._id);
+        await JobModel.findByIdAndUpdate(job._id, { status: 'FAILED', error: msg.message });
       }
-    });
-
-    // Handle unmanaged crashes or low-level errors in the worker thread
-    worker.on('error', async (err: Error) => {
-      const message = err.message || 'Worker crashed';
-      await JobModel.findByIdAndUpdate(job._id, {
-        status: 'FAILED',
-        error: message,
-      });
     });
   }
 

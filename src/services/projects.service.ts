@@ -23,10 +23,8 @@ export class ProjectServices {
   // Retrieves a summarized list of all projects including calculated file and ZIP totals
   static async listAllProjects() {
     return await ProjectModel.aggregate([
-      // Sort projects by newest first
       { $sort: { createdAt: -1 } },
 
-      // Join with files collection to calculate total file counts
       {
         $lookup: {
           from: 'files',
@@ -36,7 +34,6 @@ export class ProjectServices {
         },
       },
 
-      // Join with zipjobs collection to calculate successful export counts
       {
         $lookup: {
           from: 'zipjobs',
@@ -46,10 +43,18 @@ export class ProjectServices {
         },
       },
 
-      // Calculate derived metrics using embedded document arrays
       {
         $addFields: {
-          totalFiles: { $size: '$files' },
+          totalFiles: {
+            $size: {
+              $filter: {
+                input: '$files',
+                as: 'file',
+                cond: { $ne: ['$$file.mimeType', 'application/zip'] },
+              },
+            },
+          },
+
           totalZips: {
             $size: {
               $filter: {
@@ -62,7 +67,6 @@ export class ProjectServices {
         },
       },
 
-      // Clean up the output by removing raw joined data and sensitive owner info
       {
         $project: {
           files: 0,

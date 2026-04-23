@@ -3,7 +3,6 @@ import { ProjectServices } from '../../src/services/projects.service';
 import { userServices } from '../../src/services/users.service';
 
 // --- Project Mocks ---
-
 export const mockProjectResponse = {
   _id: '65f1a2b3c4d5e6f7a8b9c0d2',
   projectName: 'Test Project',

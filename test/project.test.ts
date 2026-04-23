@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import supertest from 'supertest';
 import { NextFunction } from 'express';
 
-// Import your new mock data
+// Import mock data
 import {
   mockProjectResponse,
   mockUpdatedProject,
@@ -51,12 +51,12 @@ describe('Project API Integration', () => {
   it('should create a project when data is valid', async () => {
     vi.mocked(ProjectServices.createNewProject).mockResolvedValue(mockProjectResponse);
     vi.mocked(userServices.checkEmail).mockResolvedValue(mockAuthUser);
-
+    // post data to end points
     const response = await request.post('/projects').send({
       projectName: 'Test Project',
-      projectDescription: 'Integration testing with Vitest',
+      projectDescription: 'Testing description',
     });
-
+    // check for response
     expect(response.status).toBe(201);
     expect(response.body).toEqual(mockProjectResponse);
   });
@@ -64,7 +64,7 @@ describe('Project API Integration', () => {
   it('should update a project when data is valid', async () => {
     vi.mocked(ProjectServices.updateProject).mockResolvedValue(mockUpdatedProject);
 
-    //
+    //put request for update project
     const response = await request.put(`/projects/${mockUpdatedProject!._id}`).send({
       projectName: 'Updated Project',
       projectDescription: 'Updated desc',
@@ -75,7 +75,7 @@ describe('Project API Integration', () => {
 
   it('should list all projects', async () => {
     vi.mocked(ProjectServices.listAllProjects).mockResolvedValue(mockProjectList);
-
+    // -------------- get req test after added all mock to list
     const response = await request.get('/projects');
 
     expect(response.status).toBe(200);
@@ -84,7 +84,7 @@ describe('Project API Integration', () => {
 
   it('should return project details with stats', async () => {
     vi.mocked(ProjectServices.getProjectWithStats).mockResolvedValue(mockProjectWithStats);
-
+    //--- get by project id
     const response = await request.get(`/projects/${mockProjectWithStats._id}`);
 
     expect(response.status).toBe(200);

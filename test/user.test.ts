@@ -18,7 +18,7 @@ vi.mock('../src/services/authRole.service.js', () => ({
   verifyEmplyeeRole: vi.fn(),
 }));
 
-// Imports AFTER mocks
+// Imports services for mocks
 import app from '../src/index';
 import { userServices } from '../src/services/users.service.js';
 import * as authGeneral from '../src/services/authGeneral.service.js';

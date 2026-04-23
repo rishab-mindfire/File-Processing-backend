@@ -7,7 +7,7 @@ vi.mock('../src/services/users.service');
 vi.mock('../src/services/authRole.service');
 vi.mock('../src/services/authGeneral.service');
 
-// Import AFTER mocks
+// Import services for there test with mocks data
 import * as userServices from '../src/services/users.service';
 import * as authRoleService from '../src/services/authRole.service';
 import * as authGeneral from '../src/services/authGeneral.service';

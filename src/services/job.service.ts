@@ -69,7 +69,7 @@ export class JobService {
       mimeType: 'application/zip',
       isGenerated: true,
     });
-
+    //send worker to do task
     const worker = new Worker(workerPath, {
       workerData: {
         jobId: job._id.toString(),

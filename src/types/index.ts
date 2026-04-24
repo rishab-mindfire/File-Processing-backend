@@ -49,7 +49,12 @@ export interface IJob {
   startedAt?: Date;
   completedAt?: Date;
 }
-//
+//file types for upload
+export type singleFile = {
+  name: string;
+  size: number;
+  _id: Types.ObjectId;
+};
 
 export type FilePopulated = {
   name: string;

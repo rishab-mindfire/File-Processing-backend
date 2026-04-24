@@ -9,9 +9,7 @@ export default defineConfig([
 
   {
     files: ['**/*.{ts,tsx}'],
-
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
-
     languageOptions: {
       ecmaVersion: 2021,
       sourceType: 'module',
@@ -26,10 +24,8 @@ export default defineConfig([
     },
 
     rules: {
-      // Prettier
       'prettier/prettier': 'error',
-
-      // Base rules
+      'prettier/prettier': ['error', { endOfLine: 'lf' }],
       semi: ['error', 'always'],
       quotes: ['error', 'single'],
       'no-unused-vars': 'off',
@@ -38,8 +34,6 @@ export default defineConfig([
       curly: ['error', 'all'],
       'max-depth': ['error', 3],
       complexity: ['error', 20],
-
-      // TypeScript rules
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     },

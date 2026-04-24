@@ -49,7 +49,12 @@ export interface IJob {
   startedAt?: Date;
   completedAt?: Date;
 }
-//
+//file types for upload
+export type singleFile = {
+  name: string;
+  size: number;
+  _id: Types.ObjectId;
+};
 
 export type FilePopulated = {
   name: string;
@@ -79,4 +84,26 @@ export type FileDocType = {
 export interface ParsedError {
   status: number;
   message: string;
+}
+
+// mock Testing Data
+export type MockUser = Partial<UserType> & {
+  _id: string;
+};
+export type MockUserEmail = {
+  _id: Types.ObjectId;
+  userEmail: string;
+};
+export interface AuthRequest extends Request {
+  userEmail?: string;
+}
+export interface MockUserData {
+  _id: string;
+  email: string;
+}
+export interface MockProject {
+  _id: string;
+  projectName: string;
+  projectDescription: string;
+  owner: string;
 }

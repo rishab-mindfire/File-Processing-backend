@@ -2,18 +2,22 @@
 
 A Node.js backend system where Projects are the primary domain entity, owning files and background processing jobs.
 
-MONGODB is used for storage 
+MONGODB is used for storage
 files are saved on server local disk
 
 ### 1. users Table (Authentication)
+
 - userID, userName, userEmail, password, role
-### 2. projects 
+
+### 2. projects
+
 - id: Primary Key (UUID/Serial)
 - name: String
 - description: Text
 - created_at: Timestamp
 
-### 3. files 
+### 3. files
+
 - id: Primary Key
 - project_id: Foreign Key (References Projects)
 - name: Original filename
@@ -22,7 +26,8 @@ files are saved on server local disk
 - mime_type: File type
 - uploaded_at: Timestamp
 
-### 4. Jobs 
+### 4. Jobs
+
 - id: Primary Key
 - project_id: Foreign Key (References Projects)
 - type: Job type (e.g., 'ZIP_COMPRESSION')
@@ -37,11 +42,13 @@ files are saved on server local disk
 ## Technical Logic
 
 ### Worker Threads
+
 - CPU-intensive tasks (ZIP compression) are offloaded to **Worker Threads**.
 - The main thread handles API requests and database initialization.
 - Workers update the database directly to report progress and completion.
 
 ### Storage Strategy
+
 - Files are stored on the filesystem under project-specific directories.
 - Database only stores metadata and reference paths.
 - Deleting a project triggers a cascade delete of DB records and physical file removal.
@@ -51,18 +58,21 @@ files are saved on server local disk
 ## API Endpoints
 
 ### Project Management
+
 - POST /api/projects - Create project
 - GET /api/projects/:id - Get details + file/job counts
 - PUT /api/projects/:id - Update details
 - DELETE /api/projects/:id - Delete project and all assets
 
 ### File Operations
+
 - POST /api/projects/:id/files - Multi-file upload
 - GET /api/projects/:id/files - List project files
 - DELETE /api/projects/:id/files/:fileId - Delete specific file
 - GET /api/projects/:id/files/:fileId/download - Download file
 
 ### Background Jobs
+
 - POST /api/projects/:id/jobs/zip - Start ZIP job (Worker Thread)
 - GET /api/projects/:id/jobs/:jobId - Check status & progress
 

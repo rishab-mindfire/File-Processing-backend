@@ -1,20 +1,25 @@
+// Main Application Entry Point
+// Configures Express middleware, security headers, and API routing
+// Handles environment-specific variable loading for production and development
+// Orchestrates the connection between the database layer and server routes
 import express from 'express';
 import dotenv from 'dotenv';
-import { userRouter } from './router/user';
-import authRoleBased from './middlewares/authRoleBased';
-import connectDB from './config/connectDB.config';
 import cors from 'cors';
-import { projectRoute } from './router/projectRouter';
+import { projectRoute } from './router/projectRouter.js';
+import authRoleBased from './middlewares/authRoleBased.js';
+import { userRouter } from './router/user.js';
+import connectDB from './config/connectDB.config.js';
 
+// Determine environment file based on the current execution mode
 const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.dev';
-
 dotenv.config({ path: envFile });
 
 const app = express();
 
-// CORS
+// Set allowed origin for cross-origin requests from the environment or default
 const frontend_url: string = process.env.FRONTEND_URL || 'http://localhost:3001';
 
+// Define security and credential options for CORS policy
 const corsOptions = {
   origin: [frontend_url],
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
@@ -25,20 +30,20 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-//Middleware
+// Enable parsing of JSON payloads and URL-encoded form data
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
+// Register application routes and apply role-based authentication to projects
 app.use('/user', userRouter);
 app.use('/projects', authRoleBased('admin'), projectRoute);
 
-// Connect DB
+// Execute the database connection logic
 connectDB().catch();
 
-// Main Route
+// Simple health check endpoint to confirm server availability
 app.get('/', (req, res) => {
-  res.send('API is running');
+  res.send('Server is running...');
 });
 
 export default app;

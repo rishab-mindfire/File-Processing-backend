@@ -20,8 +20,12 @@ export const fileSchema = Joi.object({
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     )
-    .required(),
+    .required()
+    .messages({
+      'any.only': 'Invalid file type',
+      'string.empty': 'File type is required',
+    }),
   size: Joi.number()
-    .max(1000 * 1024 * 1024) // for testing purpose upload up-to 1000 mb
+    .max(5 * 1024 * 1024)
     .required(),
 });

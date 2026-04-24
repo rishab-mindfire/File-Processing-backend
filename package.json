@@ -6,7 +6,7 @@
   "scripts": {
     "test": "vitest",
     "lint": "eslint src",
-    "lint:fix": "eslint src --fix",
+    "lint:fix": "eslint src --fix && npx prettier --write .",
     "build": "tsc",
     "format": "prettier --write \"src/**/*.{ts,tsx,json,css,scss,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,json,css,scss,md}\"",

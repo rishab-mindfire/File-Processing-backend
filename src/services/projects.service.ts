@@ -1,3 +1,7 @@
+// Project Management Service Module
+// Orchestrates project lifecycles including creation, aggregation of stats, and updates
+// Manages cascade deletions by cleaning up physical storage and related database records
+// Utilizes MongoDB aggregation pipelines for high-performance data joining and filtering
 import mongoose from 'mongoose';
 import fs from 'fs';
 import FileModel from '../models/file.model.js';
@@ -6,7 +10,7 @@ import ProjectModel from '../models/project.model.js';
 import { IProject } from '../types/index.js';
 
 export class ProjectServices {
-  // Create new project
+  // Persists a new project record to the database with provided metadata
   static async createNewProject(data: {
     projectName: string;
     projectDescription?: string;
@@ -16,12 +20,11 @@ export class ProjectServices {
     return await project.save();
   }
 
-  // List all projects with file/zip counts
+  // Retrieves a summarized list of all projects including calculated file and ZIP totals
   static async listAllProjects() {
     return await ProjectModel.aggregate([
       { $sort: { createdAt: -1 } },
 
-      // Join files collection
       {
         $lookup: {
           from: 'files',
@@ -31,7 +34,6 @@ export class ProjectServices {
         },
       },
 
-      // Join zip jobs collection
       {
         $lookup: {
           from: 'zipjobs',
@@ -41,23 +43,30 @@ export class ProjectServices {
         },
       },
 
-      // Compute derived fields
       {
         $addFields: {
-          totalFiles: { $size: '$files' }, // Count total files
+          totalFiles: {
+            $size: {
+              $filter: {
+                input: '$files',
+                as: 'file',
+                cond: { $ne: ['$$file.mimeType', 'application/zip'] },
+              },
+            },
+          },
+
           totalZips: {
             $size: {
               $filter: {
                 input: '$jobs',
                 as: 'job',
-                cond: { $eq: ['$$job.status', 'COMPLETED'] }, // Only completed jobs
+                cond: { $eq: ['$$job.status', 'COMPLETED'] },
               },
             },
           },
         },
       },
 
-      // Exclude unnecessary fields from response
       {
         $project: {
           files: 0,
@@ -68,23 +77,24 @@ export class ProjectServices {
     ]);
   }
 
-  // Update project
+  // Applies partial or full updates to an existing project document by ID
   static updateProject = async (id: string, data: IProject) => {
     return await ProjectModel.findByIdAndUpdate(
       id,
-      { $set: data }, // Update only provided fields
-      { new: true }, // Return updated document
+      { $set: data }, // Safely update only the fields provided in the request
+      { new: true }, // Return the modified document instead of the original
     );
   };
 
-  // Get project details with basic stats
+  // Fetches a single project document with real-time aggregate statistics
   static async getProjectWithStats(projectId: string) {
     const id = new mongoose.Types.ObjectId(projectId);
 
     const stats = await ProjectModel.aggregate([
-      { $match: { _id: id } }, // Match specific project
+      // Target the specific project in the pipeline
+      { $match: { _id: id } },
 
-      // Join files
+      // Join associated file metadata
       {
         $lookup: {
           from: 'files',
@@ -94,7 +104,7 @@ export class ProjectServices {
         },
       },
 
-      // Join jobs
+      // Join associated background job history
       {
         $lookup: {
           from: 'zipjobs',
@@ -104,7 +114,7 @@ export class ProjectServices {
         },
       },
 
-      // Shape final response
+      // Project final view for the details page dashboard
       {
         $project: {
           projectName: 1,
@@ -119,9 +129,9 @@ export class ProjectServices {
     return stats[0];
   }
 
-  // Delete project with cleanup
+  // Performs a deep cleanup of a project by purging disk assets and cascading DB deletes
   static async deleteProject(projectId: string) {
-    // Validate projectId
+    // Ensure the ID is a valid MongoDB ObjectId format
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
       throw { status: 400, message: 'Invalid projectId' };
     }
@@ -131,10 +141,10 @@ export class ProjectServices {
       throw { status: 404, message: 'Project not found' };
     }
 
-    // Fetch all associated files
+    // Identify all assets linked to this project before DB records are purged
     const files = await FileModel.find({ projectId });
 
-    // Delete physical files from disk
+    // Remove physical assets from the server storage asynchronously
     await Promise.all(
       files.map(async (file) => {
         try {
@@ -142,6 +152,7 @@ export class ProjectServices {
             await fs.promises.unlink(file.storagePath);
           }
         } catch (err) {
+          // Swallow errors to ensure DB cleanup continues even if disk removal fails
           if (err) {
             return;
           }
@@ -149,7 +160,7 @@ export class ProjectServices {
       }),
     );
 
-    // Cascade delete DB records
+    // Atomically delete all metadata across related collections
     await Promise.all([
       FileModel.deleteMany({ projectId }),
       JobModel.deleteMany({ projectId }),

@@ -56,7 +56,7 @@ export class JobService {
 
     ensureDirectoryExists(ZIPS_DIR);
 
-    // 1. GENERATE THE PATH AND RECORD HERE ONCE
+    // GENERATE THE PATH AND RECORD HERE ONCE
     const zipFileName = `project_${projectId}_${Date.now()}.zip`;
     const outputPath = path.join(ZIPS_DIR, zipFileName);
 
@@ -74,7 +74,7 @@ export class JobService {
       workerData: {
         jobId: job._id.toString(),
         projectId,
-        outputPath, // Send the path we already decided
+        outputPath, // Send the path already decided
         files: selectedFiles.map((f) => ({ name: f.name, path: f.storagePath })),
       },
     });

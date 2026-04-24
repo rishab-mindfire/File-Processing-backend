@@ -43,7 +43,7 @@ connectDB().catch();
 
 // Simple health check endpoint to confirm server availability
 app.get('/', (req, res) => {
-  res.send('API is running');
+  res.send('Server is running...');
 });
 
 export default app;

@@ -46,7 +46,7 @@ describe('User Login API Integration', () => {
 
     expect(response.status).toBe(400);
     expect(response.body.message).toBe('Validation failed');
-    expect(response.body.details).toBe('userEmail must be a valid email');
+    expect(response.body.details).toBe('Email must be a valid email');
   });
 
   // ---------------- WRONG PASSWORD ----------------

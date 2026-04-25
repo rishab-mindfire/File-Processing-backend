@@ -98,6 +98,6 @@ describe('User API Integration', () => {
     });
 
     expect(response.status).toBe(409);
-    expect(response.text).toBe('Email allready exists !');
+    expect(response.body.message).toBe('Email allready exists !');
   });
 });

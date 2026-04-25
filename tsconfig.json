@@ -1,5 +1,7 @@
 {
+
   "compilerOptions": {
+    "forceConsistentCasingInFileNames": true,
     "target": "es2021",
     "module": "nodenext",
     "moduleResolution": "nodenext",

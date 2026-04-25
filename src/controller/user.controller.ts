@@ -20,7 +20,7 @@ class userClass {
     // Validate registration request body
     const { error, value } = userRegistrationValidation.validate(data);
     if (error) {
-      return res.send(error.message.replace(/[\\"]/g, ''));
+      return res.status(422).json({ message: error.message.replace(/[\\"]/g, '') });
     }
 
     // Check if email already exists
@@ -32,7 +32,7 @@ class userClass {
 
       res.status(201).send('user created successfully !');
     } else {
-      res.status(409).send('Email allready exists !');
+      res.status(409).json({ message: 'Email allready exists !' });
     }
   };
 

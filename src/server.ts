@@ -3,10 +3,12 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const port = process.env.PORT || 4001;
+const port = process.env.PORT || 3001;
 
 const startServer = () => {
-  const server = app.listen(port);
+  const server = app.listen(port, () => {
+    console.log(`Server started on ..... ${port}`);
+  });
 
   server.on('error', (err: Error) => {
     if (err) {

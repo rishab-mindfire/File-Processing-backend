@@ -13,7 +13,6 @@ class Users {
     try {
       // Hash the plain-text password with a salt factor of 10 for storage security
       const newPass = await bcrypt.hash(data.userPassword.toString(), 10);
-
       const userData = { ...data, userPassword: newPass };
 
       // Assign a custom-formatted ID to the user profile

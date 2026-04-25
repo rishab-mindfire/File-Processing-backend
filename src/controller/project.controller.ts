@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { ProjectServices } from '../services/projects.service.js';
 import { userServices } from '../services/users.service.js';
-import { projectSchema } from '../Validation/projectValidation.js';
+import { projectSchema } from '../validation/projectValidation.js';
 import mongoose from 'mongoose';
 import { parseError } from '../utils/parseError.js';
 

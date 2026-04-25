@@ -4,9 +4,9 @@
 // Structures the API surface into logical segments: Management, Operations, and Jobs
 import { Router } from 'express';
 import { ProjectCtr } from '../controller/project.controller.js';
-import { JobCtr } from '../controller/Job.controller.js';
 import multer from 'multer';
 import { fileCtr } from '../controller/file.controller.js';
+import { jobCtr } from '../controller/job.controller.js';
 
 // Initialize Multer with memory storage to handle file buffers before processing
 const storage = multer.memoryStorage();
@@ -28,8 +28,8 @@ projectRoute.get('/:projectId/files/:fileId/download', fileCtr.downloadFile);
 projectRoute.delete('/:projectId/files/:fileId', fileCtr.deleteFile);
 
 // Endpoints for triggering and monitoring background ZIP compression tasks
-projectRoute.post('/:projectId/jobs/zip', JobCtr.createZipJob);
-projectRoute.get('/:projectId/zip', JobCtr.getZipsDetailsList);
-projectRoute.get('/:projectId/jobs/:jobId', JobCtr.getJobStatus);
-projectRoute.get('/:projectId/jobs/:jobId/download', JobCtr.downloadZip);
-projectRoute.delete('/:projectId/jobs/:jobId', JobCtr.deleteZipJob);
+projectRoute.post('/:projectId/jobs/zip', jobCtr.createZipJob);
+projectRoute.get('/:projectId/zip', jobCtr.getZipsDetailsList);
+projectRoute.get('/:projectId/jobs/:jobId', jobCtr.getJobStatus);
+projectRoute.get('/:projectId/jobs/:jobId/download', jobCtr.downloadZip);
+projectRoute.delete('/:projectId/jobs/:jobId', jobCtr.deleteZipJob);

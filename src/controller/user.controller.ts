@@ -3,7 +3,7 @@ import { userServices } from '../services/users.service.js';
 import { generateToken } from '../services/authGeneral.service.js';
 import { UsersModel } from '../models/users.model.js';
 import { verifyEmplyeeRole } from '../services/authRole.service.js';
-import { userLoginValidation, userRegistrationValidation } from '../Validation/user.validation.js';
+import { userLoginValidation, userRegistrationValidation } from '../validation/user.validation.js';
 
 class userClass {
   // create user

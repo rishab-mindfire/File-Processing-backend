@@ -3,10 +3,10 @@ import mongoose from 'mongoose';
 import JobModel from '../models/job.model.js';
 import FileModel from '../models/file.model.js';
 import { JobService } from '../services/job.service.js';
-import { fileZipSchema } from '../Validation/zipFileValidation.js';
+import { fileZipSchema } from '../validation/zipFileValidation.js';
 import { parseError } from '../utils/parseError.js';
 
-export class JobCtr {
+export class jobCtr {
   // create zip creation job
   static createZipJob = async (req: Request, res: Response) => {
     try {

@@ -6,7 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { Response } from 'express';
 import FileModel from '../models/file.model.js';
-import { fileSchema } from '../Validation/fileValidation.js';
+import { fileSchema } from '../validation/fileValidation.js';
 
 // Define the root directory for physical file storage from environment or defaults
 const FILES_DIR = path.resolve(process.env.UPLOAD_PATH_FILES || './uploads/files');
